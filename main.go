@@ -1,7 +1,7 @@
 package main
 
-import "github.com/comoyi/steam-server-monitor/cmd"
+import "github.com/comoyi/steam-server-monitor/app"
 
 func main() {
-	cmd.Execute()
+	app.Start()
 }
