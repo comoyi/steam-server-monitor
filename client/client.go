@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/comoyi/steam-server-monitor/log"
+	"github.com/comoyi/steam-server-monitor/theme"
 	a2s "github.com/rumblefrog/go-a2s"
 	"time"
 )
@@ -23,6 +24,7 @@ func Start() {
 	windowTitle := fmt.Sprintf("服务器信息查看器-%s", versionText)
 
 	myApp := app.New()
+	myApp.Settings().SetTheme(&theme.Theme{})
 	w = myApp.NewWindow(windowTitle)
 	w.Resize(fyne.NewSize(400, 600))
 
