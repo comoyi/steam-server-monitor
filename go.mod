@@ -5,7 +5,6 @@ go 1.17
 require (
 	fyne.io/fyne/v2 v2.1.3
 	github.com/rumblefrog/go-a2s v1.0.1
-	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.0
 )
 
@@ -18,7 +17,6 @@ require (
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
