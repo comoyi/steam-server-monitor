@@ -15,7 +15,7 @@ func Start() {
 
 	versionText := "0.0.1"
 
-	windowTitle := fmt.Sprintf("服务信息查看器-%s", versionText)
+	windowTitle := fmt.Sprintf("服务器信息查看器-%s", versionText)
 
 	myApp := app.New()
 	w := myApp.NewWindow(windowTitle)
