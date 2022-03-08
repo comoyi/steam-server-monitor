@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/widget"
 	"github.com/comoyi/steam-server-monitor/log"
 	a2s "github.com/rumblefrog/go-a2s"
 	"time"
 )
+
+var w fyne.Window
 
 func Start() {
 	log.Debugf("Client start\n")
@@ -18,7 +23,7 @@ func Start() {
 	windowTitle := fmt.Sprintf("服务器信息查看器-%s", versionText)
 
 	myApp := app.New()
-	w := myApp.NewWindow(windowTitle)
+	w = myApp.NewWindow(windowTitle)
 	w.Resize(fyne.NewSize(400, 600))
 
 	go func() {
@@ -33,9 +38,9 @@ type Player struct {
 }
 
 type Info struct {
-	ServerName   string    `json:"server_name"`
-	PlayersCount int64     `json:"players_count"`
-	Players      []*Player `json:"players"`
+	ServerName  string    `json:"server_name"`
+	PlayerCount int64     `json:"player_count"`
+	Players     []*Player `json:"players"`
 }
 
 func refresher() {
@@ -64,6 +69,29 @@ func refresh() {
 		return
 	}
 	log.Debugf("infoJson: %s\n", infoJson)
+
+	var maxDuration int64 = 0
+	for _, p := range info.Players {
+		if p == nil {
+			continue
+		}
+		if p.Duration > maxDuration {
+			maxDuration = p.Duration
+		}
+	}
+
+	serverName := binding.NewString()
+	serverName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
+	playerCount := binding.NewString()
+	playerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
+	maxDurationInfo := binding.NewString()
+	playerCount.Set(fmt.Sprintf("最长连续在线：%d", maxDuration))
+
+	w.SetContent(container.NewVBox(
+		widget.NewLabelWithData(serverName),
+		widget.NewLabelWithData(playerCount),
+		widget.NewLabelWithData(maxDurationInfo),
+	))
 }
 
 func getInfo() (*Info, error) {
@@ -125,8 +153,8 @@ func getInfo() (*Info, error) {
 	var playerCount int64 = 0
 	playerCount = int64(len(players))
 	return &Info{
-		ServerName:   serverName,
-		PlayersCount: playerCount,
-		Players:      players,
+		ServerName:  serverName,
+		PlayerCount: playerCount,
+		Players:     players,
 	}, nil
 }
