@@ -16,6 +16,7 @@ import (
 )
 
 var w fyne.Window
+var c *fyne.Container = container.NewVBox()
 
 func Start() {
 	log.Debugf("Client start\n")
@@ -60,12 +61,24 @@ func refresher() {
 
 func refresh() {
 	var err error
-	info, err := getInfo()
+	infos, err := getInfos()
 	if err != nil {
-		log.Warnf("getInfo failed, err: %v\n", err)
+		log.Warnf("getInfos failed, err: %v\n", err)
 		return
 	}
 
+	c = container.NewVBox()
+
+	for _, info := range infos {
+		if info == nil {
+			continue
+		}
+		handleOne(info)
+	}
+
+}
+
+func handleOne(info *Info) {
 	infoJson, err := json.Marshal(info)
 	if err != nil {
 		log.Warnf("json.Marshal failed, err: %v\n", err)
@@ -88,19 +101,32 @@ func refresh() {
 	playerCount := binding.NewString()
 	playerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
 	maxDurationInfo := binding.NewString()
-	playerCount.Set(fmt.Sprintf("最长连续在线：%d", maxDuration))
+	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d", maxDuration))
 
-	w.SetContent(container.NewVBox(
-		widget.NewLabelWithData(serverName),
-		widget.NewLabelWithData(playerCount),
-		widget.NewLabelWithData(maxDurationInfo),
-	))
+	//c := container.NewVBox()
+	c.Resize(fyne.NewSize(400, 600))
+	c.Add(widget.NewLabelWithData(serverName))
+	c.Add(widget.NewLabelWithData(playerCount))
+	c.Add(widget.NewLabelWithData(maxDurationInfo))
+	w.SetContent(c)
 }
 
-func getInfo() (*Info, error) {
+func getInfos() ([]*Info, error) {
+	infos := make([]*Info, 0)
+	for _, s := range config.Conf.Servers {
+		info, err := getInfo(s)
+		if err != nil {
+			continue
+		}
+		infos = append(infos, info)
+	}
+	return infos, nil
+}
+
+func getInfo(server config.Server) (*Info, error) {
 	var err error
-	ip := config.Conf.Ip
-	port := config.Conf.Port
+	ip := server.Ip
+	port := server.Port
 	address := fmt.Sprintf("%s:%d", ip, port)
 	client, err := a2s.NewClient(address)
 

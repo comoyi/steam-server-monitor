@@ -1,8 +1,12 @@
 package config
 
+var Conf Config
+
 type Config struct {
-	Ip   string `yaml:"ip"`
-	Port int64  `yaml:"port"`
+	Servers []Server `toml:"servers"`
 }
 
-var Conf Config
+type Server struct {
+	Ip   string `toml:"ip"`
+	Port int64  `toml:"port"`
+}
