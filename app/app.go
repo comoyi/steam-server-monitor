@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/comoyi/steam-server-monitor/cmd"
+	"github.com/comoyi/steam-server-monitor/client"
 	"github.com/comoyi/steam-server-monitor/config"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/spf13/viper"
@@ -9,7 +9,7 @@ import (
 
 func Start() {
 	initApp()
-	cmd.Execute()
+	client.Start()
 }
 
 func initApp() {
@@ -22,7 +22,6 @@ func initConfig() {
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME/.steam-server-monitor")
-	viper.AddConfigPath("config")
 	err = viper.ReadInConfig()
 	if err != nil {
 		log.Errorf("Read config failed, err: %v\n", err)
