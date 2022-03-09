@@ -1,4 +1,4 @@
-.PHONY: build-run build bundle-font
+.PHONY: build-run build bundle-font deps
 
 build-run:
 	make build
@@ -12,6 +12,9 @@ build-windows:
 	mkdir -p target/windows
 	CC=x86_64-w64-mingw32-gcc fyne package -os windows --name target/windows/steam-server-monitor.exe
 	cp config/config.toml target/windows
+
+clean:
+	rm -rf target
 
 bundle-font:
 	fyne bundle --package fonts --prefix Resource --name DefaultFont -o fonts/default_font.go <font-file>

@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+var servers = make([]*Server, 0)
 var w fyne.Window
 var c *fyne.Container = container.NewVBox()
 
@@ -29,12 +30,38 @@ func Start() {
 	myApp.Settings().SetTheme(&theme.Theme{})
 	w = myApp.NewWindow(windowTitle)
 	w.Resize(fyne.NewSize(400, 600))
+	w.SetContent(c)
+
+	for _, s := range config.Conf.Servers {
+		server := &Server{
+			Ip:       s.Ip,
+			Port:     s.Port,
+			Interval: s.Interval,
+		}
+		servers = append(servers, server)
+	}
 
 	go func() {
-		refresher()
+		run()
 	}()
 
 	w.ShowAndRun()
+}
+
+type Server struct {
+	Name     string
+	Ip       string
+	Port     int64
+	Interval int64
+	Remark   string
+	ViewData *ViewData
+}
+
+type ViewData struct {
+	ServerName      binding.String
+	PlayerCount     binding.String
+	MaxDurationInfo binding.String
+	PlayerInfos     binding.ExternalStringList
 }
 
 type Player struct {
@@ -47,38 +74,78 @@ type Info struct {
 	Players     []*Player `json:"players"`
 }
 
-func refresher() {
-	var interval int64 = 10
-	refresh()
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			refresh()
-		}
+func run() {
+	for _, s := range servers {
+		bind(s)
+		go func(s *Server) {
+			var interval int64 = s.Interval
+			if interval <= 0 {
+				interval = 10
+			}
+			refresh(s)
+			ticker := time.NewTicker(time.Duration(interval) * time.Second)
+			for {
+				select {
+				case <-ticker.C:
+					refresh(s)
+				}
+			}
+		}(s)
 	}
 }
 
-func refresh() {
-	var err error
-	infos, err := getInfos()
+func bind(server *Server) {
+	serverName := binding.NewString()
+	serverName.Set(fmt.Sprintf("服务器名称：%s", "-"))
+	playerCount := binding.NewString()
+	playerCount.Set(fmt.Sprintf("在线人数：%s", "-"))
+	maxDurationInfo := binding.NewString()
+	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", "-"))
+
+	dataList := binding.BindStringList(&[]string{})
+
+	server.ViewData = &ViewData{
+		ServerName:      serverName,
+		PlayerCount:     playerCount,
+		MaxDurationInfo: maxDurationInfo,
+		PlayerInfos:     dataList,
+	}
+
+	cOverview := container.NewHBox()
+	cOverview.Add(widget.NewLabelWithData(serverName))
+	cOverview.Add(widget.NewLabelWithData(playerCount))
+	cOverview.Add(widget.NewLabelWithData(maxDurationInfo))
+
+	c.Add(cOverview)
+
+	list := widget.NewListWithData(dataList, func() fyne.CanvasObject {
+		return widget.NewLabel("")
+	}, func(item binding.DataItem, obj fyne.CanvasObject) {
+		s := item.(binding.String)
+		o := obj.(*widget.Label)
+		o.Bind(s)
+		sNew, err := s.Get()
+		if err != nil {
+			sNew = "-"
+		}
+		_ = s.Set(sNew)
+	})
+	scroll := container.NewVScroll(list)
+	scroll.SetMinSize(fyne.NewSize(50, 100))
+	cDetail := container.NewVBox()
+	cDetail.Add(scroll)
+	c.Add(cDetail)
+}
+
+func refresh(server *Server) {
+	info, err := getInfo(server)
 	if err != nil {
-		log.Warnf("getInfos failed, err: %v\n", err)
 		return
 	}
-
-	c = container.NewVBox()
-
-	for _, info := range infos {
-		if info == nil {
-			continue
-		}
-		handleOne(info)
-	}
-
+	refreshUI(server, info)
 }
 
-func handleOne(info *Info) {
+func refreshUI(server *Server, info *Info) {
 	infoJson, err := json.Marshal(info)
 	if err != nil {
 		log.Warnf("json.Marshal failed, err: %v\n", err)
@@ -96,34 +163,22 @@ func handleOne(info *Info) {
 		}
 	}
 
-	serverName := binding.NewString()
-	serverName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
-	playerCount := binding.NewString()
-	playerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
-	maxDurationInfo := binding.NewString()
-	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d", maxDuration))
+	server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
+	server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
+	server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d秒", maxDuration))
 
-	//c := container.NewVBox()
-	c.Resize(fyne.NewSize(400, 600))
-	c.Add(widget.NewLabelWithData(serverName))
-	c.Add(widget.NewLabelWithData(playerCount))
-	c.Add(widget.NewLabelWithData(maxDurationInfo))
-	w.SetContent(c)
-}
-
-func getInfos() ([]*Info, error) {
-	infos := make([]*Info, 0)
-	for _, s := range config.Conf.Servers {
-		info, err := getInfo(s)
-		if err != nil {
+	playerInfo := make([]string, 0)
+	for i, p := range info.Players {
+		if p == nil {
 			continue
 		}
-		infos = append(infos, info)
+		playerInfo = append(playerInfo, fmt.Sprintf("玩家%d连续在线%d秒", i+1, p.Duration))
 	}
-	return infos, nil
+
+	server.ViewData.PlayerInfos.Set(playerInfo)
 }
 
-func getInfo(server config.Server) (*Info, error) {
+func getInfo(server *Server) (*Info, error) {
 	var err error
 	ip := server.Ip
 	port := server.Port
