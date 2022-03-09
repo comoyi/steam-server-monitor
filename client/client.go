@@ -61,6 +61,7 @@ type ViewData struct {
 	ServerName      binding.String
 	PlayerCount     binding.String
 	MaxDurationInfo binding.String
+	PlayerInfos     binding.ExternalStringList
 }
 
 type Player struct {
@@ -101,16 +102,37 @@ func bind(server *Server) {
 	maxDurationInfo := binding.NewString()
 	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", "-"))
 
+	dataList := binding.BindStringList(&[]string{})
+
 	server.ViewData = &ViewData{
 		ServerName:      serverName,
 		PlayerCount:     playerCount,
 		MaxDurationInfo: maxDurationInfo,
+		PlayerInfos:     dataList,
 	}
 
-	c.Resize(fyne.NewSize(400, 600))
-	c.Add(widget.NewLabelWithData(serverName))
-	c.Add(widget.NewLabelWithData(playerCount))
-	c.Add(widget.NewLabelWithData(maxDurationInfo))
+	cOverview := container.NewHBox()
+	cOverview.Add(widget.NewLabelWithData(serverName))
+	cOverview.Add(widget.NewLabelWithData(playerCount))
+	cOverview.Add(widget.NewLabelWithData(maxDurationInfo))
+
+	c.Add(cOverview)
+
+	list := widget.NewListWithData(dataList, func() fyne.CanvasObject {
+		return widget.NewLabel("")
+	}, func(item binding.DataItem, obj fyne.CanvasObject) {
+		s := item.(binding.String)
+		o := obj.(*widget.Label)
+		o.Bind(s)
+		sNew, err := s.Get()
+		if err != nil {
+			sNew = "-"
+		}
+		_ = s.Set(sNew)
+	})
+	cDetail := container.NewVBox()
+	cDetail.Add(list)
+	c.Add(cDetail)
 }
 
 func refresh(server *Server) {
@@ -141,7 +163,17 @@ func refreshUI(server *Server, info *Info) {
 
 	server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
 	server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
-	server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d", maxDuration))
+	server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d秒", maxDuration))
+
+	playerInfo := make([]string, 0)
+	for i, p := range info.Players {
+		if p == nil {
+			continue
+		}
+		playerInfo = append(playerInfo, fmt.Sprintf("玩家%d连续在线%d秒", i+1, p.Duration))
+	}
+
+	server.ViewData.PlayerInfos.Set(playerInfo)
 }
 
 func getInfo(server *Server) (*Info, error) {
