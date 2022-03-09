@@ -73,22 +73,22 @@ type Info struct {
 
 func run() {
 	for _, s := range servers {
-		bindOne(s)
+		bind(s)
 		go func(s *Server) {
 			var interval int64 = 5
-			refreshOne(s)
+			refresh(s)
 			ticker := time.NewTicker(time.Duration(interval) * time.Second)
 			for {
 				select {
 				case <-ticker.C:
-					refreshOne(s)
+					refresh(s)
 				}
 			}
 		}(s)
 	}
 }
 
-func bindOne(server *Server) {
+func bind(server *Server) {
 	serverName := binding.NewString()
 	serverName.Set(fmt.Sprintf("服务器名称：%s", "-"))
 	playerCount := binding.NewString()
@@ -108,15 +108,15 @@ func bindOne(server *Server) {
 	c.Add(widget.NewLabelWithData(maxDurationInfo))
 }
 
-func refreshOne(server *Server) {
+func refresh(server *Server) {
 	info, err := getInfo(server)
 	if err != nil {
 		return
 	}
-	handleOneServer(server, info)
+	refreshUI(server, info)
 }
 
-func handleOneServer(server *Server, info *Info) {
+func refreshUI(server *Server, info *Info) {
 	infoJson, err := json.Marshal(info)
 	if err != nil {
 		log.Warnf("json.Marshal failed, err: %v\n", err)
