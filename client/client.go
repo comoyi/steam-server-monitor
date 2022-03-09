@@ -90,11 +90,11 @@ func run() {
 
 func bindOne(server *Server) {
 	serverName := binding.NewString()
-	serverName.Set(fmt.Sprintf("服务器名称：%s", ""))
+	serverName.Set(fmt.Sprintf("服务器名称：%s", "-"))
 	playerCount := binding.NewString()
-	playerCount.Set(fmt.Sprintf("在线人数：%d", ""))
+	playerCount.Set(fmt.Sprintf("在线人数：%s", "-"))
 	maxDurationInfo := binding.NewString()
-	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d", ""))
+	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", "-"))
 
 	server.ViewData = &ViewData{
 		ServerName:      serverName,
