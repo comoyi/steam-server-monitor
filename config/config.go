@@ -15,8 +15,9 @@ type Config struct {
 }
 
 type Server struct {
-	Ip   string `toml:"ip"`
-	Port int64  `toml:"port"`
+	Ip       string `toml:"ip"`
+	Port     int64  `toml:"port"`
+	Interval int64  `toml:"interval"`
 }
 
 func LoadConfig() {

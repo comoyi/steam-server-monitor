@@ -34,8 +34,9 @@ func Start() {
 
 	for _, s := range config.Conf.Servers {
 		server := &Server{
-			Ip:   s.Ip,
-			Port: s.Port,
+			Ip:       s.Ip,
+			Port:     s.Port,
+			Interval: s.Interval,
 		}
 		servers = append(servers, server)
 	}
@@ -51,6 +52,7 @@ type Server struct {
 	Name     string
 	Ip       string
 	Port     int64
+	Interval int64
 	Remark   string
 	ViewData *ViewData
 }
@@ -75,7 +77,10 @@ func run() {
 	for _, s := range servers {
 		bind(s)
 		go func(s *Server) {
-			var interval int64 = 5
+			var interval int64 = s.Interval
+			if interval <= 0 {
+				interval = 10
+			}
 			refresh(s)
 			ticker := time.NewTicker(time.Duration(interval) * time.Second)
 			for {
