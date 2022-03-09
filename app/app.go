@@ -24,7 +24,7 @@ func initConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
-	viper.AddConfigPath("$HOME/.steam-server-monitor")
+	viper.AddConfigPath(fmt.Sprintf("%s%s%s", "$HOME", string(os.PathSeparator), ".steam-server-monitor"))
 	err = viper.ReadInConfig()
 	if err != nil {
 		log.Errorf("Read config failed, err: %v\n", err)
