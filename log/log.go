@@ -2,7 +2,7 @@ package log
 
 import (
 	"fmt"
-	"github.com/comoyi/steam-server-monitor/config"
+	"github.com/spf13/viper"
 	"io/fs"
 	"os"
 )
@@ -32,7 +32,7 @@ func Errorf(format string, args ...interface{}) {
 }
 
 func w(s string) {
-	if !config.Conf.Debug {
+	if !viper.GetBool("debug") {
 		return
 	}
 	file, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, fs.ModePerm)
