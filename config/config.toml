@@ -1,7 +1,9 @@
-[[servers]]
-ip="127.0.0.1"
-port=2457
+debug = false
 
 [[servers]]
-ip="127.0.0.2"
-port=2457
+  ip = "127.0.0.1"
+  port = 2457
+
+[[servers]]
+  ip = "127.0.0.2"
+  port = 2457

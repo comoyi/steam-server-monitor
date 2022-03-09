@@ -3,6 +3,7 @@ package config
 var Conf Config
 
 type Config struct {
+	Debug   bool     `toml:"debug"`
 	Servers []Server `toml:"servers"`
 }
 

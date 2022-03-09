@@ -1,19 +1,47 @@
 package log
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/comoyi/steam-server-monitor/config"
+	"io/fs"
+	"os"
+)
 
 func Debugf(format string, args ...interface{}) {
-	fmt.Printf("[DEBUG]"+format, args...)
+	//fmt.Printf("[DEBUG] "+format, args...)
+	s := fmt.Sprintf("[DEBUG]"+format, args...)
+	w(s)
 }
 
 func Infof(format string, args ...interface{}) {
-	fmt.Printf("[INFO] "+format, args...)
+	//fmt.Printf("[INFO] "+format, args...)
+	s := fmt.Sprintf("[INFO] "+format, args...)
+	w(s)
 }
 
 func Warnf(format string, args ...interface{}) {
-	fmt.Printf("[WARN] "+format, args...)
+	//fmt.Printf("[WARN] "+format, args...)
+	s := fmt.Sprintf("[WARN] "+format, args...)
+	w(s)
 }
 
 func Errorf(format string, args ...interface{}) {
-	fmt.Printf("[ERROR]"+format, args...)
+	//fmt.Printf("[ERROR]"+format, args...)
+	s := fmt.Sprintf("[ERROR]"+format, args...)
+	w(s)
+}
+
+func w(s string) {
+	if !config.Conf.Debug {
+		return
+	}
+	file, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, fs.ModePerm)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	_, err = file.WriteString(s)
+	if err != nil {
+		return
+	}
 }
