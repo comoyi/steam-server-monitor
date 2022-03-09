@@ -130,8 +130,10 @@ func bind(server *Server) {
 		}
 		_ = s.Set(sNew)
 	})
+	scroll := container.NewVScroll(list)
+	scroll.SetMinSize(fyne.NewSize(50, 100))
 	cDetail := container.NewVBox()
-	cDetail.Add(list)
+	cDetail.Add(scroll)
 	c.Add(cDetail)
 }
 
