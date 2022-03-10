@@ -7,6 +7,8 @@ import (
 	"image/color"
 )
 
+var MyTheme = &Theme{}
+
 type Theme struct {
 }
 
