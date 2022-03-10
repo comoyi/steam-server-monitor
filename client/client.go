@@ -33,21 +33,59 @@ func Start() {
 	myApp := app.New()
 	myApp.Settings().SetTheme(theme.MyTheme)
 	w = myApp.NewWindow(windowTitle)
+	w.SetMaster()
 	w.Resize(fyne.NewSize(400, 600))
 	w.SetContent(c)
 
+	initToolBar(myApp)
+
+	for _, s := range config.Conf.Servers {
+		server := &Server{
+			Ip:       s.Ip,
+			Port:     s.Port,
+			Interval: s.Interval,
+		}
+		servers = append(servers, server)
+	}
+
+	go func() {
+		run()
+	}()
+
+	w.ShowAndRun()
+}
+
+func initToolBar(myApp fyne.App) {
+
+	cBar := container.NewGridWithColumns(2)
+
+	var addWindow fyne.Window
+	var ipEntry *widget.Entry
+	var portEntry *widget.Entry
 	addBtn := widget.NewButton("+", func() {
-		addWindow := myApp.NewWindow("添加服务器")
+		if addWindow != nil {
+			ipEntry.SetText("")
+			portEntry.SetText("")
+			addWindow.Show()
+			return
+		}
+		addWindow = myApp.NewWindow("添加服务器")
+		addWindow.SetCloseIntercept(func() {
+			addWindow.Hide()
+		})
 		c := container.NewVBox()
 		c2 := container.NewAdaptiveGrid(2)
 		c3 := container.NewAdaptiveGrid(2)
 		c4 := container.NewAdaptiveGrid(2)
 		ipLabel := widget.NewLabel("IP")
-		ipEntry := widget.NewEntry()
+		ipEntry = widget.NewEntry()
+		ipEntry.SetPlaceHolder("127.0.0.1")
 		portLabel := widget.NewLabel("端口")
-		portEntry := widget.NewEntry()
-		intervalLabel := widget.NewLabel("间隔")
+		portEntry = widget.NewEntry()
+		portEntry.SetPlaceHolder("2457")
+		intervalLabel := widget.NewLabel("刷新间隔（秒）")
 		intervalEntry := widget.NewEntry()
+		intervalEntry.SetPlaceHolder("10")
 		intervalEntry.Text = "10"
 		addBtn := widget.NewButton("添加", func() {
 			ip := ipEntry.Text
@@ -107,7 +145,7 @@ func Start() {
 			}
 			viper.Set("servers", serverConfig)
 
-			addWindow.Close()
+			addWindow.Hide()
 		})
 
 		c2.Add(ipLabel)
@@ -125,28 +163,31 @@ func Start() {
 		addWindow.SetContent(c)
 		addWindow.Show()
 	})
-	c.Add(addBtn)
+	cBar.Add(addBtn)
 
-	saveBtn := widget.NewButtonWithIcon("保存", theme.MyTheme.Icon(fynetheme.IconNameDocumentSave), func() {
-		log.Debugf("%+v\n", viper.AllSettings())
-		config.SaveConfig()
+	var saveBtn *widget.Button
+	saveText := "保存"
+	saveBtn = widget.NewButtonWithIcon(saveText, theme.MyTheme.Icon(fynetheme.IconNameDocumentSave), func() {
+		saveBtn.Disable()
+		go func() {
+			defer saveBtn.Enable()
+			saveBtn.SetText("保存中...")
+			log.Debugf("%+v\n", viper.AllSettings())
+			err := config.SaveConfig()
+			if err != nil {
+				dialog.ShowInformation("提示", "保存失败", w)
+				return
+			}
+			go func() {
+				saveBtn.SetText("保存成功")
+				<-time.After(2 * time.Second)
+				saveBtn.SetText(saveText)
+			}()
+		}()
 	})
-	c.Add(saveBtn)
+	cBar.Add(saveBtn)
 
-	for _, s := range config.Conf.Servers {
-		server := &Server{
-			Ip:       s.Ip,
-			Port:     s.Port,
-			Interval: s.Interval,
-		}
-		servers = append(servers, server)
-	}
-
-	go func() {
-		run()
-	}()
-
-	w.ShowAndRun()
+	c.Add(cBar)
 }
 
 type Server struct {

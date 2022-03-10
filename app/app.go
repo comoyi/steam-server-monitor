@@ -12,5 +12,5 @@ func Start() {
 
 func initApp() {
 	config.LoadConfig()
-	config.SaveConfig()
+	_ = config.SaveConfig()
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/spf13/viper"
 	"os"
+	"sync"
 )
 
 var Conf Config
@@ -40,11 +41,15 @@ func LoadConfig() {
 	log.Debugf("config: %+v\n", Conf)
 }
 
-func SaveConfig() {
+var saveMutex = &sync.Mutex{}
+
+func SaveConfig() error {
+	saveMutex.Lock()
+	defer saveMutex.Unlock()
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Warnf("Get os.UserHomeDir failed, err: %v\n", err)
-		return
+		return err
 	}
 	log.Debugf("userHomeDir: %s\n", userHomeDir)
 
@@ -55,21 +60,22 @@ func SaveConfig() {
 	exist, err := isPathExist(configPath)
 	if err != nil {
 		log.Warnf("Check isPathExist failed, err: %v\n", err)
-		return
+		return err
 	}
 	if !exist {
 		err = os.Mkdir(configPath, os.ModePerm)
 		if err != nil {
 			log.Warnf("Get os.Mkdir failed, err: %v\n", err)
-			return
+			return err
 		}
 	}
 
 	err = viper.WriteConfigAs(configFile)
 	if err != nil {
 		log.Errorf("SafeWriteConfigAs failed, err: %v\n", err)
-		return
+		return err
 	}
+	return nil
 }
 
 func isPathExist(path string) (bool, error) {
