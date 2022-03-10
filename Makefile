@@ -21,4 +21,4 @@ bundle-font:
 
 deps:
 	go get fyne.io/fyne/v2
-	go install fyne.io/fyne/v2/cmd/fyne
+	go install fyne.io/fyne/v2/cmd/fyne@latest
