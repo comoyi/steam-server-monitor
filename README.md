@@ -1,5 +1,11 @@
 # steam-server-monitor
 
+## Prerequisites
+```
+go get fyne.io/fyne/v2
+go get fyne.io/fyne/v2/cmd/fyne
+```
+
 ## Usage
 
 1.Edit Makefile replace <font-file> with a font file that supports Chinese then execute
