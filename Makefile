@@ -6,12 +6,17 @@ build-run:
 
 build:
 	go build -o target/linux/steam-server-monitor main.go
-	cp config/config.toml target/linux
+	cp config/config.toml target/linux/
 
-build-windows:
+package-linux:
+	fyne package -os linux --release
+	mkdir -p target/linux
+	mv steam-server-monitor.tar.xz target/linux/
+
+package-windows:
 	mkdir -p target/windows
-	CC=x86_64-w64-mingw32-gcc fyne package -os windows --name target/windows/steam-server-monitor.exe
-	cp config/config.toml target/windows
+	CC=x86_64-w64-mingw32-gcc fyne package -os windows --release --appID com.comoyi.steam-server-monitor --name target/windows/steam-server-monitor.exe
+	cp config/config.toml target/windows/
 
 clean:
 	rm -rf target
@@ -21,4 +26,4 @@ bundle-font:
 
 deps:
 	go get fyne.io/fyne/v2
-	go install fyne.io/fyne/v2/cmd/fyne
+	go install fyne.io/fyne/v2/cmd/fyne@latest

@@ -13,13 +13,14 @@ import (
 	"github.com/comoyi/steam-server-monitor/config"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/theme"
+	"github.com/comoyi/steam-server-monitor/utils/dialogutil"
 	a2s "github.com/rumblefrog/go-a2s"
 	"github.com/spf13/viper"
 	"strconv"
 	"time"
 )
 
-var appName = "服务器信息查看器"
+var appName = "Steam服务器信息查看器"
 var versionText = "0.0.1"
 var servers = make([]*Server, 0)
 var w fyne.Window
@@ -29,10 +30,10 @@ var myApp fyne.App
 func Start() {
 	log.Debugf("Client start\n")
 
-	windowTitle := fmt.Sprintf("%s-%s", appName, versionText)
+	windowTitle := fmt.Sprintf("%s-v%s", appName, versionText)
 
 	myApp = app.New()
-	myApp.Settings().SetTheme(theme.MyTheme)
+	myApp.Settings().SetTheme(theme.CustomTheme)
 	w = myApp.NewWindow(windowTitle)
 	w.SetMaster()
 	w.Resize(fyne.NewSize(400, 600))
@@ -47,6 +48,7 @@ func Start() {
 			Ip:       s.Ip,
 			Port:     s.Port,
 			Interval: s.Interval,
+			Remark:   s.Remark,
 		}
 		servers = append(servers, server)
 	}
@@ -60,7 +62,7 @@ func Start() {
 
 func initMenu() {
 	addMenuItem := fyne.NewMenuItem("添加服务器", func() {
-		add()
+		showAddUI()
 	})
 	firstMenu := fyne.NewMenu("操作", addMenuItem)
 	helpMenuItem := fyne.NewMenuItem("关于", func() {
@@ -89,13 +91,13 @@ func initToolBar() {
 	cBar := container.NewGridWithColumns(2)
 
 	addBtn := widget.NewButton("+", func() {
-		add()
+		showAddUI()
 	})
 	cBar.Add(addBtn)
 
 	var saveBtn *widget.Button
 	saveText := "保存"
-	saveBtn = widget.NewButtonWithIcon(saveText, theme.MyTheme.Icon(fynetheme.IconNameDocumentSave), func() {
+	saveBtn = widget.NewButtonWithIcon(saveText, theme.CustomTheme.Icon(fynetheme.IconNameDocumentSave), func() {
 		saveBtn.Disable()
 		go func() {
 			defer saveBtn.Enable()
@@ -103,7 +105,7 @@ func initToolBar() {
 			log.Debugf("%+v\n", viper.AllSettings())
 			err := config.SaveConfig()
 			if err != nil {
-				dialog.ShowInformation("提示", "保存失败", w)
+				dialogutil.ShowInformation("提示", "保存失败", w)
 				return
 			}
 			go func() {
@@ -118,94 +120,122 @@ func initToolBar() {
 	c.Add(cBar)
 }
 
-var addWindow fyne.Window
-var ipEntry *widget.Entry
-var portEntry *widget.Entry
+func showAddUI() {
+	showServerFormUI(false, nil)
+}
 
-func add() {
-	if addWindow != nil {
-		ipEntry.SetText("")
-		portEntry.SetText("")
-		addWindow.Show()
-		return
+func showEditUI(server *Server) {
+	showServerFormUI(true, server)
+}
+
+func showServerFormUI(isEdit bool, server *Server) {
+	title := "添加服务器"
+	if isEdit {
+		if server == nil {
+			return
+		}
+		title = "编辑服务器"
 	}
-	addWindow = myApp.NewWindow("添加服务器")
-	addWindow.SetCloseIntercept(func() {
-		addWindow.Hide()
-	})
+	var serverFormWindow fyne.Window
+	serverFormWindow = myApp.NewWindow(title)
 	c := container.NewVBox()
 	c2 := container.NewAdaptiveGrid(2)
 	c3 := container.NewAdaptiveGrid(2)
 	c4 := container.NewAdaptiveGrid(2)
+	c5 := container.NewAdaptiveGrid(2)
 	ipLabel := widget.NewLabel("IP")
+	var ipEntry *widget.Entry
 	ipEntry = widget.NewEntry()
 	ipEntry.SetPlaceHolder("127.0.0.1")
+	if isEdit {
+		ipEntry.SetText(server.Ip)
+	}
 	portLabel := widget.NewLabel("端口")
+	var portEntry *widget.Entry
 	portEntry = widget.NewEntry()
 	portEntry.SetPlaceHolder("2457")
+	if isEdit {
+		portEntry.SetText(strconv.FormatInt(server.Port, 10))
+	}
 	intervalLabel := widget.NewLabel("刷新间隔（秒）")
 	intervalEntry := widget.NewEntry()
 	intervalEntry.SetPlaceHolder("10")
-	intervalEntry.Text = "10"
-	addBtn := widget.NewButton("添加", func() {
+	intervalText := "10"
+	if isEdit {
+		intervalText = strconv.FormatInt(server.Interval, 10)
+	}
+	intervalEntry.Text = intervalText
+
+	remarkLabel := widget.NewLabel("备注")
+	var remarkEntry *widget.Entry
+	remarkEntry = widget.NewEntry()
+	if isEdit {
+		remarkEntry.SetText(server.Remark)
+	}
+
+	btnText := "添加"
+	if isEdit {
+		btnText = "保存"
+	}
+	submitBtn := widget.NewButton(btnText, func() {
 		ip := ipEntry.Text
 		if ip == "" {
-			dialog.ShowInformation("提示", "请输入IP", addWindow)
+			dialogutil.ShowInformation("提示", "请输入IP", serverFormWindow)
 			return
 		}
 
 		portVal := portEntry.Text
 		if portVal == "" {
-			dialog.ShowInformation("提示", "请输入端口", addWindow)
+			dialogutil.ShowInformation("提示", "请输入端口", serverFormWindow)
 			return
 		}
 		port, err := strconv.ParseInt(portVal, 10, 64)
 		if err != nil {
-			dialog.ShowInformation("提示", "请输入正确的端口", addWindow)
+			dialogutil.ShowInformation("提示", "请输入正确的端口", serverFormWindow)
 			return
 		}
 		if port < 0 {
-			dialog.ShowInformation("提示", "请输入正确的端口", addWindow)
+			dialogutil.ShowInformation("提示", "请输入正确的端口", serverFormWindow)
 			return
 		}
 
 		intervalVal := intervalEntry.Text
 		if intervalVal == "" {
-			dialog.ShowInformation("提示", "请输入间隔", addWindow)
+			dialogutil.ShowInformation("提示", "请输入间隔", serverFormWindow)
 			return
 		}
 		interval, err := strconv.ParseInt(intervalVal, 10, 64)
 		if err != nil {
-			dialog.ShowInformation("提示", "请输入正确的间隔", addWindow)
+			dialogutil.ShowInformation("提示", "请输入正确的间隔", serverFormWindow)
 			return
 		}
 		if interval <= 0 {
-			dialog.ShowInformation("提示", "请输入合适的间隔", addWindow)
+			dialogutil.ShowInformation("提示", "请输入合适的间隔", serverFormWindow)
 			return
 		}
 
-		server := &Server{
-			Name:     "",
-			Ip:       ip,
-			Port:     port,
-			Interval: interval,
-			Remark:   "",
-			ViewData: nil,
-		}
-		servers = append(servers, server)
-		handleServer(server)
+		remark := remarkEntry.Text
 
-		serverConfig := make([]map[string]interface{}, 0)
-		for _, server := range servers {
-			serverConfig = append(serverConfig, map[string]interface{}{
-				"ip":       server.Ip,
-				"port":     server.Port,
-				"interval": server.Interval,
-			})
+		if isEdit {
+			server.Ip = ip
+			server.Port = port
+			server.UpdateInterval(interval)
+			server.Remark = remark
+			refreshUI(server)
+		} else {
+			newServer := &Server{
+				Ip:       ip,
+				Port:     port,
+				Interval: interval,
+				Remark:   remark,
+			}
+			servers = append(servers, newServer)
+			handleServer(newServer)
 		}
-		viper.Set("servers", serverConfig)
 
-		addWindow.Hide()
+		resetServerConfig()
+
+		serverFormWindow.Hide()
 	})
 
 	c2.Add(ipLabel)
@@ -214,29 +244,54 @@ func add() {
 	c3.Add(portEntry)
 	c4.Add(intervalLabel)
 	c4.Add(intervalEntry)
+	c5.Add(remarkLabel)
+	c5.Add(remarkEntry)
 	c.Add(c2)
 	c.Add(c3)
 	c.Add(c4)
-	c.Add(addBtn)
+	c.Add(c5)
+	c.Add(submitBtn)
 
-	addWindow.Resize(fyne.NewSize(300, 200))
-	addWindow.SetContent(c)
-	addWindow.Show()
+	serverFormWindow.SetContent(c)
+	serverFormWindow.Show()
+}
+
+func resetServerConfig() {
+	serverConfig := make([]map[string]interface{}, 0)
+	for _, server := range servers {
+		serverConfig = append(serverConfig, map[string]interface{}{
+			"ip":       server.Ip,
+			"port":     server.Port,
+			"interval": server.Interval,
+			"remark":   server.Remark,
+		})
+	}
+	viper.Set("servers", serverConfig)
 }
 
 type Server struct {
-	Name     string
-	Ip       string
-	Port     int64
-	Interval int64
-	Remark   string
-	ViewData *ViewData
+	Name           string
+	Ip             string
+	Port           int64
+	Interval       int64
+	IntervalTicker *time.Ticker
+	Remark         string
+	Info           *Info
+	ViewData       *ViewData
+}
+
+func (s *Server) UpdateInterval(interval int64) {
+	s.Interval = interval
+	if s.IntervalTicker != nil {
+		s.IntervalTicker.Reset(time.Duration(interval) * time.Second)
+	}
 }
 
 type ViewData struct {
 	ServerName      binding.String
 	PlayerCount     binding.String
 	MaxDurationInfo binding.String
+	Remark          binding.String
 	PlayerInfos     binding.ExternalStringList
 }
 
@@ -258,6 +313,10 @@ func run() {
 
 func handleServer(server *Server) {
 	bind(server)
+	asyncRefresh(server)
+}
+
+func asyncRefresh(server *Server) {
 	go func(server *Server) {
 		var interval int64 = server.Interval
 		if interval <= 0 {
@@ -265,6 +324,7 @@ func handleServer(server *Server) {
 		}
 		refresh(server)
 		ticker := time.NewTicker(time.Duration(interval) * time.Second)
+		server.IntervalTicker = ticker
 		for {
 			select {
 			case <-ticker.C:
@@ -281,6 +341,8 @@ func bind(server *Server) {
 	playerCount.Set(fmt.Sprintf("在线人数：%s", "-"))
 	maxDurationInfo := binding.NewString()
 	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", "-"))
+	remarkInfo := binding.NewString()
+	remarkInfo.Set(fmt.Sprintf("备注：%s", server.Remark))
 
 	dataList := binding.BindStringList(&[]string{})
 
@@ -288,15 +350,55 @@ func bind(server *Server) {
 		ServerName:      serverName,
 		PlayerCount:     playerCount,
 		MaxDurationInfo: maxDurationInfo,
+		Remark:          remarkInfo,
 		PlayerInfos:     dataList,
 	}
 
-	cOverview := container.NewHBox()
-	cOverview.Add(widget.NewLabelWithData(serverName))
-	cOverview.Add(widget.NewLabelWithData(playerCount))
-	cOverview.Add(widget.NewLabelWithData(maxDurationInfo))
+	panelContainer := container.NewVBox()
 
-	c.Add(cOverview)
+	var scroll *container.Scroll
+
+	overviewContainer := container.NewHBox()
+	var toggleBtn *widget.Button
+	toggleBtn = widget.NewButton("→", func() {
+		if scroll != nil {
+			if scroll.Visible() {
+				scroll.Hide()
+				toggleBtn.SetText("→")
+			} else {
+				scroll.Show()
+				toggleBtn.SetText("↓")
+			}
+		}
+	})
+	var editBtn *widget.Button
+	editBtn = widget.NewButton("编辑", func() {
+		showEditUI(server)
+	})
+	var removeBtn *widget.Button
+	removeBtn = widget.NewButton("-", func() {
+		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel("确定删除吗"), func(b bool) {
+			if b {
+				for i, s := range servers {
+					if s == server {
+						servers = append(servers[:i], servers[i+1:]...)
+						break
+					}
+				}
+				resetServerConfig()
+				panelContainer.Hide()
+			}
+		}, w).Show()
+	})
+	overviewContainer.Add(toggleBtn)
+	overviewContainer.Add(editBtn)
+	overviewContainer.Add(removeBtn)
+	overviewContainer.Add(widget.NewLabelWithData(serverName))
+	overviewContainer.Add(widget.NewLabelWithData(playerCount))
+	overviewContainer.Add(widget.NewLabelWithData(maxDurationInfo))
+	overviewContainer.Add(widget.NewLabelWithData(remarkInfo))
+
+	panelContainer.Add(overviewContainer)
 
 	list := widget.NewListWithData(dataList, func() fyne.CanvasObject {
 		return widget.NewLabel("")
@@ -310,11 +412,13 @@ func bind(server *Server) {
 		}
 		_ = s.Set(sNew)
 	})
-	scroll := container.NewVScroll(list)
-	scroll.SetMinSize(fyne.NewSize(50, 100))
-	cDetail := container.NewVBox()
-	cDetail.Add(scroll)
-	c.Add(cDetail)
+	scroll = container.NewVScroll(list)
+	scroll.SetMinSize(fyne.NewSize(0, 175))
+	scroll.Hide()
+	detailContainer := container.NewVBox()
+	detailContainer.Add(scroll)
+	panelContainer.Add(detailContainer)
+	c.Add(panelContainer)
 }
 
 func refresh(server *Server) {
@@ -322,10 +426,16 @@ func refresh(server *Server) {
 	if err != nil {
 		return
 	}
-	refreshUI(server, info)
+	server.Info = info
+	refreshUI(server)
 }
 
-func refreshUI(server *Server, info *Info) {
+func refreshUI(server *Server) {
+	if server == nil {
+		log.Warnf("refreshUI server is nil\n")
+		return
+	}
+	info := server.Info
 	infoJson, err := json.Marshal(info)
 	if err != nil {
 		log.Warnf("json.Marshal failed, err: %v\n", err)
@@ -333,29 +443,37 @@ func refreshUI(server *Server, info *Info) {
 	}
 	log.Debugf("infoJson: %s\n", infoJson)
 
-	var maxDuration int64 = 0
-	for _, p := range info.Players {
-		if p == nil {
-			continue
+	server.ViewData.Remark.Set(fmt.Sprintf("备注：%s", server.Remark))
+
+	if info != nil {
+		var maxDuration int64 = 0
+		for _, p := range info.Players {
+			if p == nil {
+				continue
+			}
+			if p.Duration > maxDuration {
+				maxDuration = p.Duration
+			}
 		}
-		if p.Duration > maxDuration {
-			maxDuration = p.Duration
+		maxDurationFormatted := "-"
+		if info.PlayerCount > 0 {
+			maxDurationFormatted = formatDuration(maxDuration)
 		}
+
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
+		server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
+		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", maxDurationFormatted))
+
+		playerInfoList := make([]string, 0)
+		for i, p := range info.Players {
+			if p == nil {
+				continue
+			}
+			playerInfoList = append(playerInfoList, fmt.Sprintf("玩家%d连续在线%s", i+1, formatDuration(p.Duration)))
+		}
+
+		server.ViewData.PlayerInfos.Set(playerInfoList)
 	}
-
-	server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
-	server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
-	server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d秒", maxDuration))
-
-	playerInfo := make([]string, 0)
-	for i, p := range info.Players {
-		if p == nil {
-			continue
-		}
-		playerInfo = append(playerInfo, fmt.Sprintf("玩家%d连续在线%d秒", i+1, p.Duration))
-	}
-
-	server.ViewData.PlayerInfos.Set(playerInfo)
 }
 
 func getInfo(server *Server) (*Info, error) {
@@ -421,4 +539,39 @@ func getInfo(server *Server) (*Info, error) {
 		PlayerCount: playerCount,
 		Players:     players,
 	}, nil
+}
+
+func formatDuration(second int64) string {
+	var d int64
+	var h int64
+	var m int64
+	var s int64
+	var str string
+	var flag = false
+
+	d = second / 86400
+	second -= d * 86400
+	h = second / 3600
+	second -= h * 3600
+	m = second / 60
+	second -= m * 60
+	s = second
+
+	if d > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d天", str, d)
+	}
+	if flag || h > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d时", str, h)
+	}
+	if flag || m > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d分", str, m)
+	}
+	if flag || s > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d秒", str, s)
+	}
+	return str
 }
