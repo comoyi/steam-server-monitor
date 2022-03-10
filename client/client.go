@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var appName = "服务器信息查看器"
+var appName = "Steam服务器信息查看器"
 var versionText = "0.0.1"
 var servers = make([]*Server, 0)
 var w fyne.Window
@@ -29,7 +29,7 @@ var myApp fyne.App
 func Start() {
 	log.Debugf("Client start\n")
 
-	windowTitle := fmt.Sprintf("%s-%s", appName, versionText)
+	windowTitle := fmt.Sprintf("%s-v%s", appName, versionText)
 
 	myApp = app.New()
 	myApp.Settings().SetTheme(theme.MyTheme)
@@ -291,12 +291,29 @@ func bind(server *Server) {
 		PlayerInfos:     dataList,
 	}
 
-	cOverview := container.NewHBox()
-	cOverview.Add(widget.NewLabelWithData(serverName))
-	cOverview.Add(widget.NewLabelWithData(playerCount))
-	cOverview.Add(widget.NewLabelWithData(maxDurationInfo))
+	panelContainer := container.NewVBox()
 
-	c.Add(cOverview)
+	var scroll *container.Scroll
+
+	overviewContainer := container.NewHBox()
+	var toggleBtn *widget.Button
+	toggleBtn = widget.NewButton("→", func() {
+		if scroll != nil {
+			if scroll.Visible() {
+				scroll.Hide()
+				toggleBtn.SetText("→")
+			} else {
+				scroll.Show()
+				toggleBtn.SetText("↓")
+			}
+		}
+	})
+	overviewContainer.Add(toggleBtn)
+	overviewContainer.Add(widget.NewLabelWithData(serverName))
+	overviewContainer.Add(widget.NewLabelWithData(playerCount))
+	overviewContainer.Add(widget.NewLabelWithData(maxDurationInfo))
+
+	panelContainer.Add(overviewContainer)
 
 	list := widget.NewListWithData(dataList, func() fyne.CanvasObject {
 		return widget.NewLabel("")
@@ -310,11 +327,13 @@ func bind(server *Server) {
 		}
 		_ = s.Set(sNew)
 	})
-	scroll := container.NewVScroll(list)
-	scroll.SetMinSize(fyne.NewSize(50, 100))
-	cDetail := container.NewVBox()
-	cDetail.Add(scroll)
-	c.Add(cDetail)
+	scroll = container.NewVScroll(list)
+	scroll.SetMinSize(fyne.NewSize(0, 175))
+	scroll.Hide()
+	detailContainer := container.NewVBox()
+	detailContainer.Add(scroll)
+	panelContainer.Add(detailContainer)
+	c.Add(panelContainer)
 }
 
 func refresh(server *Server) {
@@ -342,20 +361,24 @@ func refreshUI(server *Server, info *Info) {
 			maxDuration = p.Duration
 		}
 	}
+	maxDurationFormatted := "-"
+	if info.PlayerCount > 0 {
+		maxDurationFormatted = formatDuration(maxDuration)
+	}
 
 	server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
 	server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
-	server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%d秒", maxDuration))
+	server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", maxDurationFormatted))
 
-	playerInfo := make([]string, 0)
+	playerInfoList := make([]string, 0)
 	for i, p := range info.Players {
 		if p == nil {
 			continue
 		}
-		playerInfo = append(playerInfo, fmt.Sprintf("玩家%d连续在线%d秒", i+1, p.Duration))
+		playerInfoList = append(playerInfoList, fmt.Sprintf("玩家%d连续在线%s", i+1, formatDuration(p.Duration)))
 	}
 
-	server.ViewData.PlayerInfos.Set(playerInfo)
+	server.ViewData.PlayerInfos.Set(playerInfoList)
 }
 
 func getInfo(server *Server) (*Info, error) {
@@ -421,4 +444,39 @@ func getInfo(server *Server) (*Info, error) {
 		PlayerCount: playerCount,
 		Players:     players,
 	}, nil
+}
+
+func formatDuration(second int64) string {
+	var d int64
+	var h int64
+	var m int64
+	var s int64
+	var str string
+	var flag = false
+
+	d = second / 86400
+	second -= d * 86400
+	h = second / 3600
+	second -= h * 3600
+	m = second / 60
+	second -= m * 60
+	s = second
+
+	if d > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d天", str, d)
+	}
+	if flag || h > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d时", str, h)
+	}
+	if flag || m > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d分", str, m)
+	}
+	if flag || s > 0 {
+		flag = true
+		str = fmt.Sprintf("%s%d秒", str, s)
+	}
+	return str
 }
