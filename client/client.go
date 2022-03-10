@@ -7,11 +7,15 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
+	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/comoyi/steam-server-monitor/config"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/theme"
 	a2s "github.com/rumblefrog/go-a2s"
+	"github.com/spf13/viper"
+	"strconv"
 	"time"
 )
 
@@ -27,10 +31,107 @@ func Start() {
 	windowTitle := fmt.Sprintf("服务器信息查看器-%s", versionText)
 
 	myApp := app.New()
-	myApp.Settings().SetTheme(&theme.Theme{})
+	myApp.Settings().SetTheme(theme.MyTheme)
 	w = myApp.NewWindow(windowTitle)
 	w.Resize(fyne.NewSize(400, 600))
 	w.SetContent(c)
+
+	addBtn := widget.NewButton("+", func() {
+		addWindow := myApp.NewWindow("添加服务器")
+		c := container.NewVBox()
+		c2 := container.NewAdaptiveGrid(2)
+		c3 := container.NewAdaptiveGrid(2)
+		c4 := container.NewAdaptiveGrid(2)
+		ipLabel := widget.NewLabel("IP")
+		ipEntry := widget.NewEntry()
+		portLabel := widget.NewLabel("端口")
+		portEntry := widget.NewEntry()
+		intervalLabel := widget.NewLabel("间隔")
+		intervalEntry := widget.NewEntry()
+		intervalEntry.Text = "10"
+		addBtn := widget.NewButton("添加", func() {
+			ip := ipEntry.Text
+			if ip == "" {
+				dialog.ShowInformation("提示", "请输入IP", addWindow)
+				return
+			}
+
+			portVal := portEntry.Text
+			if portVal == "" {
+				dialog.ShowInformation("提示", "请输入端口", addWindow)
+				return
+			}
+			port, err := strconv.ParseInt(portVal, 10, 64)
+			if err != nil {
+				dialog.ShowInformation("提示", "请输入正确的端口", addWindow)
+				return
+			}
+			if port < 0 {
+				dialog.ShowInformation("提示", "请输入正确的端口", addWindow)
+				return
+			}
+
+			intervalVal := intervalEntry.Text
+			if intervalVal == "" {
+				dialog.ShowInformation("提示", "请输入间隔", addWindow)
+				return
+			}
+			interval, err := strconv.ParseInt(intervalVal, 10, 64)
+			if err != nil {
+				dialog.ShowInformation("提示", "请输入正确的间隔", addWindow)
+				return
+			}
+			if interval <= 0 {
+				dialog.ShowInformation("提示", "请输入合适的间隔", addWindow)
+				return
+			}
+
+			server := &Server{
+				Name:     "",
+				Ip:       ip,
+				Port:     port,
+				Interval: interval,
+				Remark:   "",
+				ViewData: nil,
+			}
+			servers = append(servers, server)
+			handleServer(server)
+
+			serverConfig := make([]map[string]interface{}, 0)
+			for _, server := range servers {
+				serverConfig = append(serverConfig, map[string]interface{}{
+					"ip":       server.Ip,
+					"port":     server.Port,
+					"interval": server.Interval,
+				})
+			}
+			viper.Set("servers", serverConfig)
+
+			addWindow.Close()
+		})
+
+		c2.Add(ipLabel)
+		c2.Add(ipEntry)
+		c3.Add(portLabel)
+		c3.Add(portEntry)
+		c4.Add(intervalLabel)
+		c4.Add(intervalEntry)
+		c.Add(c2)
+		c.Add(c3)
+		c.Add(c4)
+		c.Add(addBtn)
+
+		addWindow.Resize(fyne.NewSize(300, 200))
+		addWindow.SetContent(c)
+		addWindow.Show()
+	})
+	c.Add(addBtn)
+
+	saveBtn := widget.NewButtonWithIcon("保存", theme.MyTheme.Icon(fynetheme.IconNameDocumentSave), func() {
+		log.Debugf("%+v\n", viper.AllSettings())
+		config.SaveConfig()
+	})
+	c.Add(saveBtn)
 
 	for _, s := range config.Conf.Servers {
 		server := &Server{
@@ -75,23 +176,27 @@ type Info struct {
 }
 
 func run() {
-	for _, s := range servers {
-		bind(s)
-		go func(s *Server) {
-			var interval int64 = s.Interval
-			if interval <= 0 {
-				interval = 10
-			}
-			refresh(s)
-			ticker := time.NewTicker(time.Duration(interval) * time.Second)
-			for {
-				select {
-				case <-ticker.C:
-					refresh(s)
-				}
-			}
-		}(s)
+	for _, server := range servers {
+		handleServer(server)
 	}
+}
+
+func handleServer(server *Server) {
+	bind(server)
+	go func(server *Server) {
+		var interval int64 = server.Interval
+		if interval <= 0 {
+			interval = 10
+		}
+		refresh(server)
+		ticker := time.NewTicker(time.Duration(interval) * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				refresh(server)
+			}
+		}
+	}(server)
 }
 
 func bind(server *Server) {
