@@ -235,6 +235,12 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 		resetServerConfig()
 
+		err = config.SaveConfig()
+		if err != nil {
+			dialogutil.ShowInformation("提示", "保存失败", w)
+			return
+		}
+
 		serverFormWindow.Hide()
 	})
 
@@ -386,6 +392,11 @@ func bind(server *Server) {
 					}
 				}
 				resetServerConfig()
+				err := config.SaveConfig()
+				if err != nil {
+					dialogutil.ShowInformation("提示", "保存失败", w)
+					return
+				}
 				panelContainer.Hide()
 			}
 		}, w).Show()
