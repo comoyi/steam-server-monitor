@@ -14,15 +14,18 @@ import (
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/theme"
 	"github.com/comoyi/steam-server-monitor/utils/dialogutil"
+	"github.com/comoyi/steam-server-monitor/utils/timeutil"
 	a2s "github.com/rumblefrog/go-a2s"
 	"github.com/spf13/viper"
 	"strconv"
+	"sync"
 	"time"
 )
 
 var appName = "Steam服务器信息查看器"
 var versionText = "0.0.1"
-var servers = make([]*Server, 0)
+
+var serverContainer = NewServerContainer()
 var w fyne.Window
 var c *fyne.Container
 var myApp fyne.App
@@ -44,13 +47,8 @@ func Start() {
 	initToolBar()
 
 	for _, s := range config.Conf.Servers {
-		server := &Server{
-			Ip:       s.Ip,
-			Port:     s.Port,
-			Interval: s.Interval,
-			Remark:   s.Remark,
-		}
-		servers = append(servers, server)
+		server := NewServer(s.Ip, s.Port, s.Interval, s.Remark)
+		serverContainer.AddServer(server)
 	}
 
 	go func() {
@@ -58,6 +56,130 @@ func Start() {
 	}()
 
 	w.ShowAndRun()
+}
+
+func resetServerConfig() {
+	serverConfig := make([]map[string]interface{}, 0)
+	for _, server := range serverContainer.GetServers() {
+		serverConfig = append(serverConfig, map[string]interface{}{
+			"ip":       server.Ip,
+			"port":     server.Port,
+			"interval": server.Interval,
+			"remark":   server.Remark,
+		})
+	}
+	viper.Set("servers", serverConfig)
+}
+
+type ServerContainer struct {
+	Servers []*Server
+	mu      sync.Mutex
+}
+
+func NewServerContainer() *ServerContainer {
+	servers := make([]*Server, 0)
+	return &ServerContainer{
+		Servers: servers,
+		mu:      sync.Mutex{},
+	}
+}
+
+func (sc *ServerContainer) GetServers() []*Server {
+	return sc.Servers
+}
+
+func (sc *ServerContainer) AddServer(server *Server) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.Servers = append(sc.Servers, server)
+}
+
+func (sc *ServerContainer) RemoveServer(server *Server) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	for i, s := range sc.Servers {
+		if s == server {
+			sc.Servers = append(sc.Servers[:i], sc.Servers[i+1:]...)
+			break
+		}
+	}
+}
+
+type Server struct {
+	Name           string
+	Ip             string
+	Port           int64
+	Interval       int64
+	IntervalTicker *time.Ticker
+	Remark         string
+	Info           *Info
+	ViewData       *ViewData
+}
+
+func NewServer(ip string, port int64, interval int64, remark string) *Server {
+	if interval <= 0 {
+		interval = 10
+	}
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	return &Server{
+		Ip:             ip,
+		Port:           port,
+		Interval:       interval,
+		IntervalTicker: ticker,
+		Remark:         remark,
+	}
+}
+
+func (s *Server) Start() {
+	s.AsyncRefresh()
+}
+
+func (s *Server) AsyncRefresh() {
+	go func(server *Server) {
+		refresh(server)
+		for {
+			select {
+			case <-server.IntervalTicker.C:
+				refresh(server)
+			}
+		}
+	}(s)
+}
+
+func (s *Server) UpdateInterval(interval int64) {
+	s.Interval = interval
+	if s.IntervalTicker != nil {
+		s.IntervalTicker.Reset(time.Duration(interval) * time.Second)
+	}
+}
+
+func (s *Server) getInfo() (*Info, error) {
+	return getInfo(s)
+}
+
+type ViewData struct {
+	ServerName      binding.String
+	PlayerCount     binding.String
+	MaxDurationInfo binding.String
+	Remark          binding.String
+	PlayerInfos     binding.ExternalStringList
+}
+
+type Player struct {
+	Duration int64 `json:"duration"`
+}
+
+type Info struct {
+	ServerName  string    `json:"server_name"`
+	PlayerCount int64     `json:"player_count"`
+	Players     []*Player `json:"players"`
+}
+
+func run() {
+	for _, server := range serverContainer.GetServers() {
+		bind(server)
+		server.Start()
+	}
 }
 
 func initMenu() {
@@ -223,17 +345,19 @@ func showServerFormUI(isEdit bool, server *Server) {
 			server.Remark = remark
 			refreshUI(server)
 		} else {
-			newServer := &Server{
-				Ip:       ip,
-				Port:     port,
-				Interval: interval,
-				Remark:   remark,
-			}
-			servers = append(servers, newServer)
-			handleServer(newServer)
+			newServer := NewServer(ip, port, interval, remark)
+			serverContainer.AddServer(newServer)
+			bind(newServer)
+			newServer.Start()
 		}
 
 		resetServerConfig()
+
+		err = config.SaveConfig()
+		if err != nil {
+			dialogutil.ShowInformation("提示", "保存失败", w)
+			return
+		}
 
 		serverFormWindow.Hide()
 	})
@@ -254,84 +378,6 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 	serverFormWindow.SetContent(c)
 	serverFormWindow.Show()
-}
-
-func resetServerConfig() {
-	serverConfig := make([]map[string]interface{}, 0)
-	for _, server := range servers {
-		serverConfig = append(serverConfig, map[string]interface{}{
-			"ip":       server.Ip,
-			"port":     server.Port,
-			"interval": server.Interval,
-			"remark":   server.Remark,
-		})
-	}
-	viper.Set("servers", serverConfig)
-}
-
-type Server struct {
-	Name           string
-	Ip             string
-	Port           int64
-	Interval       int64
-	IntervalTicker *time.Ticker
-	Remark         string
-	Info           *Info
-	ViewData       *ViewData
-}
-
-func (s *Server) UpdateInterval(interval int64) {
-	s.Interval = interval
-	if s.IntervalTicker != nil {
-		s.IntervalTicker.Reset(time.Duration(interval) * time.Second)
-	}
-}
-
-type ViewData struct {
-	ServerName      binding.String
-	PlayerCount     binding.String
-	MaxDurationInfo binding.String
-	Remark          binding.String
-	PlayerInfos     binding.ExternalStringList
-}
-
-type Player struct {
-	Duration int64 `json:"duration"`
-}
-
-type Info struct {
-	ServerName  string    `json:"server_name"`
-	PlayerCount int64     `json:"player_count"`
-	Players     []*Player `json:"players"`
-}
-
-func run() {
-	for _, server := range servers {
-		handleServer(server)
-	}
-}
-
-func handleServer(server *Server) {
-	bind(server)
-	asyncRefresh(server)
-}
-
-func asyncRefresh(server *Server) {
-	go func(server *Server) {
-		var interval int64 = server.Interval
-		if interval <= 0 {
-			interval = 10
-		}
-		refresh(server)
-		ticker := time.NewTicker(time.Duration(interval) * time.Second)
-		server.IntervalTicker = ticker
-		for {
-			select {
-			case <-ticker.C:
-				refresh(server)
-			}
-		}
-	}(server)
 }
 
 func bind(server *Server) {
@@ -379,13 +425,13 @@ func bind(server *Server) {
 	removeBtn = widget.NewButton("-", func() {
 		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel("确定删除吗"), func(b bool) {
 			if b {
-				for i, s := range servers {
-					if s == server {
-						servers = append(servers[:i], servers[i+1:]...)
-						break
-					}
-				}
+				serverContainer.RemoveServer(server)
 				resetServerConfig()
+				err := config.SaveConfig()
+				if err != nil {
+					dialogutil.ShowInformation("提示", "保存失败", w)
+					return
+				}
 				panelContainer.Hide()
 			}
 		}, w).Show()
@@ -422,7 +468,7 @@ func bind(server *Server) {
 }
 
 func refresh(server *Server) {
-	info, err := getInfo(server)
+	info, err := server.getInfo()
 	if err != nil {
 		return
 	}
@@ -457,7 +503,7 @@ func refreshUI(server *Server) {
 		}
 		maxDurationFormatted := "-"
 		if info.PlayerCount > 0 {
-			maxDurationFormatted = formatDuration(maxDuration)
+			maxDurationFormatted = timeutil.FormatDuration(maxDuration)
 		}
 
 		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
@@ -469,7 +515,7 @@ func refreshUI(server *Server) {
 			if p == nil {
 				continue
 			}
-			playerInfoList = append(playerInfoList, fmt.Sprintf("玩家%d连续在线%s", i+1, formatDuration(p.Duration)))
+			playerInfoList = append(playerInfoList, fmt.Sprintf("玩家%d连续在线%s", i+1, timeutil.FormatDuration(p.Duration)))
 		}
 
 		server.ViewData.PlayerInfos.Set(playerInfoList)
@@ -539,39 +585,4 @@ func getInfo(server *Server) (*Info, error) {
 		PlayerCount: playerCount,
 		Players:     players,
 	}, nil
-}
-
-func formatDuration(second int64) string {
-	var d int64
-	var h int64
-	var m int64
-	var s int64
-	var str string
-	var flag = false
-
-	d = second / 86400
-	second -= d * 86400
-	h = second / 3600
-	second -= h * 3600
-	m = second / 60
-	second -= m * 60
-	s = second
-
-	if d > 0 {
-		flag = true
-		str = fmt.Sprintf("%s%d天", str, d)
-	}
-	if flag || h > 0 {
-		flag = true
-		str = fmt.Sprintf("%s%d时", str, h)
-	}
-	if flag || m > 0 {
-		flag = true
-		str = fmt.Sprintf("%s%d分", str, m)
-	}
-	if flag || s > 0 {
-		flag = true
-		str = fmt.Sprintf("%s%d秒", str, s)
-	}
-	return str
 }

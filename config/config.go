@@ -11,8 +11,8 @@ import (
 var Conf Config
 
 type Config struct {
-	Debug   bool     `toml:"debug"`
-	Servers []Server `toml:"servers"`
+	Debug   bool      `toml:"debug"`
+	Servers []*Server `toml:"servers"`
 }
 
 type Server struct {
