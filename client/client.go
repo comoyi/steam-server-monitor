@@ -131,7 +131,6 @@ func NewServer(ip string, port int64, interval int64, remark string) *Server {
 }
 
 func (s *Server) Start() {
-	bind(s)
 	s.AsyncRefresh()
 }
 
@@ -178,6 +177,7 @@ type Info struct {
 
 func run() {
 	for _, server := range serverContainer.GetServers() {
+		bind(server)
 		server.Start()
 	}
 }
@@ -347,6 +347,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 		} else {
 			newServer := NewServer(ip, port, interval, remark)
 			serverContainer.AddServer(newServer)
+			bind(newServer)
 			newServer.Start()
 		}
 
