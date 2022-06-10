@@ -16,6 +16,9 @@ jobs:
       - name: Add GOPATH to $PATH
         run: echo "$HOME/go/bin" >> $GITHUB_PATH
 
+      - name: Install Prerequisites
+        run: sudo apt-get install gcc-mingw-w64-x86-64
+
       #https://developer.fyne.io/started/#prerequisites
       - name: Prerequisites for fyne
         run: sudo apt-get install gcc libgl1-mesa-dev xorg-dev
@@ -42,14 +45,14 @@ jobs:
       - name: Package Linux
         run: make package-linux
 
-      - name: Package Windows
-        run: make package-windows
-
       - name: Upload Linux package
         uses: actions/upload-artifact@v3
         with:
           path: target/linux/steam-server-monitor.tar.xz
           retention-days: 3
+
+      - name: Package Windows
+        run: make package-windows
 
       - name: Upload Window package
         uses: actions/upload-artifact@v3
