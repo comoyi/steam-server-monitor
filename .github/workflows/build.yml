@@ -13,6 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Add GOPATH to $PATH
+        run: echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Prerequisites for fyne
+        run: sudo apt-get install golang gcc libgl1-mesa-dev xorg-dev
+
       - name: Install Fonts
         run: |
           wget -O HarmonyOS_Sans.zip https://communityfile-drcn.op.hicloud.com/FileServer/getFile/cmtyPub/011/111/111/0000000000011111111.20220527115222.36009086555928047609106823953760:50530526070936:2800:E1CA794341643D6B6FFE8F1EE2DBB96B786975D088FDA18348E89FEC28135686.zip?needInitFileName=true
@@ -20,13 +26,10 @@ jobs:
           mkdir -p /usr/local/share/fonts
           sudo cp HarmonyOS\ Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.ttf /usr/local/share/fonts
 
-      - name: Deps
+      - name: Install fyne
         run: make deps
 
-      - name: Add GOPATH to $PATH
-        run: echo "$HOME/go/bin" >> $GITHUB_PATH
-
-      - name: Build Font
+      - name: Generate font source
         run: make bundle-font-build
 
       - name: Go mod tidy
