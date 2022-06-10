@@ -23,13 +23,11 @@ jobs:
       - name: Deps
         run: make deps
 
-      - name: Test
-        run: |
-          go env
-          ls -lh ~/go/bin
+      - name: Add GOPATH to $PATH
+        run: export PATH=$PATH:$HOME/go/bin
 
-#      - name: Build Font
-#        run: make bundle-font-build
-#
-#      - name: Build
-#        run: make build
+      - name: Build Font
+        run: make bundle-font-build
+
+      - name: Build
+        run: make build
