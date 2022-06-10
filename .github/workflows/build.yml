@@ -49,6 +49,17 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: steam-server-monitor-linux
+          path: target/linux/steam-server-monitor.tar.gz
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Package Linux Installer
+        run: make package-linux-installer
+
+      - name: Upload Linux installer package
+        uses: actions/upload-artifact@v3
+        with:
+          name: steam-server-monitor-linux-installer
           path: target/linux/steam-server-monitor.tar.xz
           retention-days: 3
           if-no-files-found: error

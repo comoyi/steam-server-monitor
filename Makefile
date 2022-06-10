@@ -9,6 +9,10 @@ build:
 	cp config/config.toml target/linux/
 
 package-linux:
+	make build
+	cd target/linux && tar zcvf steam-server-monitor.tar.gz config.toml steam-server-monitor && cd -
+
+package-linux-installer:
 	fyne package -os linux --release
 	mkdir -p target/linux
 	mv steam-server-monitor.tar.xz target/linux/
