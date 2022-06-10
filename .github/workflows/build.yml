@@ -36,5 +36,23 @@ jobs:
       - name: Go mod tidy
         run: go mod tidy
 
-      - name: Build
-        run: make build
+#      - name: Build
+#        run: make build
+
+      - name: Package Linux
+        run: make package-linux
+
+      - name: Package Windows
+        run: make package-windows
+
+      - name: Upload Linux package
+        uses: actions/upload-artifact@v3
+        with:
+          path: target/linux/steam-server-monitor.tar.xz
+          retention-days: 3
+
+      - name: Upload Window package
+        uses: actions/upload-artifact@v3
+        with:
+          path: target/linux/steam-server-monitor.zip
+          retention-days: 3

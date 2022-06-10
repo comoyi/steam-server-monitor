@@ -17,6 +17,7 @@ package-windows:
 	mkdir -p target/windows
 	CC=x86_64-w64-mingw32-gcc fyne package -os windows --release --appID com.comoyi.steam-server-monitor --name target/windows/steam-server-monitor.exe
 	cp config/config.toml target/windows/
+	cd target/windows && zip steam-server-monitor.zip config.toml steam-server-monitor.exe && cd -
 
 clean:
 	rm -rf target
