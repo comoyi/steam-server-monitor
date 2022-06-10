@@ -10,7 +10,7 @@ build:
 
 package-linux:
 	make build
-	cd target/linux && tar zcvf steam-server-monitor.tar.gz config.toml steam-server-monitor && cd -
+	cd target/linux && tar zcvf steam-server-monitor-linux.tar.gz config.toml steam-server-monitor && cd -
 
 package-linux-installer:
 	fyne package -os linux --release
@@ -21,7 +21,7 @@ package-windows:
 	mkdir -p target/windows
 	CC=x86_64-w64-mingw32-gcc fyne package -os windows --release --appID com.comoyi.steam-server-monitor --name target/windows/steam-server-monitor.exe
 	cp config/config.toml target/windows/
-	cd target/windows && zip steam-server-monitor.zip config.toml steam-server-monitor.exe && cd -
+	cd target/windows && zip steam-server-monitor-windows.zip config.toml steam-server-monitor.exe && cd -
 
 clean:
 	rm -rf target

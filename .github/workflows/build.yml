@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: steam-server-monitor-linux
-          path: target/linux/steam-server-monitor.tar.gz
+          path: target/linux/steam-server-monitor-linux.tar.gz
           retention-days: 3
           if-no-files-found: error
 
@@ -71,6 +71,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: steam-server-monitor-windows
-          path: target/windows/steam-server-monitor.zip
+          path: target/windows/steam-server-monitor-windows.zip
           retention-days: 3
           if-no-files-found: error
