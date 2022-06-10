@@ -20,6 +20,9 @@ jobs:
           mkdir -p /usr/local/share/fonts
           sudo cp HarmonyOS\ Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.ttf /usr/local/share/fonts
 
+      - name: Deps
+        run: make deps
+
       - name: Build Font
         run: make bundle-font-build
 
