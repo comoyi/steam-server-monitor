@@ -23,8 +23,13 @@ jobs:
       - name: Deps
         run: make deps
 
-      - name: Build Font
-        run: make bundle-font-build
+      - name: Test
+        run: |
+          go env
+          ls -lh ~/go/bin
 
-      - name: Build
-        run: make build
+#      - name: Build Font
+#        run: make bundle-font-build
+#
+#      - name: Build
+#        run: make build
