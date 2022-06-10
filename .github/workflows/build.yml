@@ -1,4 +1,4 @@
-name: CI
+name: Build
 
 on:
   push:
@@ -13,8 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Fonts
-        run: fc-list
+      - name: Install Fonts
+        run: |
+          wget https://communityfile-drcn.op.hicloud.com/FileServer/getFile/cmtyPub/011/111/111/0000000000011111111.20220527115222.36009086555928047609106823953760:50530526070936:2800:E1CA794341643D6B6FFE8F1EE2DBB96B786975D088FDA18348E89FEC28135686.zip?needInitFileName=true
+          unzip HarmonyOS\ Sans.zip
+          mkdir -p /usr/local/share/fonts
+          cp HarmonyOS\ Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.ttf /usr/local/share/fonts
 
-#      - name: Build
-#        run: make build
+      - name: Build Font
+        run: make bundle-font-build
+
+      - name: Build
+        run: make build
