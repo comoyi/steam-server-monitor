@@ -24,7 +24,7 @@ jobs:
         run: make deps
 
       - name: Add GOPATH to $PATH
-        run: export PATH=$PATH:/home/runner/go/bin
+        run: echo "$HOME/go/bin" >> $GITHUB_PATH
 
       - name: Build Font
         run: make bundle-font-build
