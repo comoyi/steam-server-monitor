@@ -48,9 +48,10 @@ jobs:
       - name: Upload Linux package
         uses: actions/upload-artifact@v3
         with:
-          name: steam-server-monitor.tar.xz
+          name: steam-server-monitor-linux
           path: target/linux/steam-server-monitor.tar.xz
           retention-days: 3
+          if-no-files-found: error
 
       - name: Package Windows
         run: make package-windows
@@ -58,6 +59,7 @@ jobs:
       - name: Upload Window package
         uses: actions/upload-artifact@v3
         with:
-          name: steam-server-monitor.zip
+          name: steam-server-monitor-windows
           path: target/windows/steam-server-monitor.zip
           retention-days: 3
+          if-no-files-found: error
