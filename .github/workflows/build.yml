@@ -16,8 +16,9 @@ jobs:
       - name: Add GOPATH to $PATH
         run: echo "$HOME/go/bin" >> $GITHUB_PATH
 
+      #https://developer.fyne.io/started/#prerequisites
       - name: Prerequisites for fyne
-        run: sudo apt-get install golang gcc libgl1-mesa-dev xorg-dev
+        run: sudo apt-get install gcc libgl1-mesa-dev xorg-dev
 
       - name: Install Fonts
         run: |
