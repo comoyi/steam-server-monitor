@@ -12,7 +12,7 @@ import (
 	"github.com/comoyi/steam-server-monitor/config"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/theme"
-	"github.com/comoyi/steam-server-monitor/utils/dialogutil"
+	"github.com/comoyi/steam-server-monitor/util/dialogutil"
 	"github.com/spf13/viper"
 	"strconv"
 	"time"

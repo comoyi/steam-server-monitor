@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/comoyi/steam-server-monitor/log"
-	"github.com/comoyi/steam-server-monitor/utils/timeutil"
+	"github.com/comoyi/steam-server-monitor/util/timeutil"
 	"github.com/rumblefrog/go-a2s"
 	"sync"
 	"time"
