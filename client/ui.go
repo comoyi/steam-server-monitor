@@ -334,6 +334,7 @@ func bind(server *Server) {
 	detailContainer.Add(scroll)
 	panelContainer.Add(detailContainer)
 	c.Add(panelContainer)
+	c.Refresh()
 }
 
 func resetServerConfig() {
