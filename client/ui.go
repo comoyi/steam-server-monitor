@@ -90,9 +90,12 @@ func initToolBar() {
 				return
 			}
 			go func() {
-				saveBtn.SetText("保存成功")
+				saveSuccessText := "保存成功"
+				saveBtn.SetText(saveSuccessText)
 				<-time.After(2 * time.Second)
-				saveBtn.SetText(saveText)
+				if saveBtn.Text == saveSuccessText {
+					saveBtn.SetText(saveText)
+				}
 			}()
 		}()
 	})
