@@ -71,14 +71,14 @@ func initMenu() {
 func initToolBar() {
 	cBar := container.NewGridWithColumns(2)
 
-	addBtn := widget.NewButton("+", func() {
+	addBtn := widget.NewButtonWithIcon("", theme2.ContentAddIcon(), func() {
 		showAddUI()
 	})
 	cBar.Add(addBtn)
 
 	var saveBtn *widget.Button
 	saveText := "保存"
-	saveBtn = widget.NewButtonWithIcon(saveText, theme.CustomTheme.Icon(theme2.IconNameDocumentSave), func() {
+	saveBtn = widget.NewButtonWithIcon(saveText, theme2.DocumentSaveIcon(), func() {
 		saveBtn.Disable()
 		go func() {
 			defer saveBtn.Enable()
@@ -134,7 +134,14 @@ func showServerFormUI(isEdit bool, server *Server) {
 	if isEdit {
 		ipEntry.SetText(server.Ip)
 	}
+
 	portLabel := widget.NewLabel("端口")
+	portHelpBtn := widget.NewButtonWithIcon("", theme2.HelpIcon(), func() {
+		dialogutil.ShowInformation("", "信息查询端口，\n和主端口可能不同", serverFormWindow)
+	})
+	portBox := container.NewHBox()
+	portBox.Add(portLabel)
+	portBox.Add(portHelpBtn)
 	var portEntry *widget.Entry
 	portEntry = widget.NewEntry()
 	portEntry.SetPlaceHolder("2457")
@@ -226,7 +233,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 	c2.Add(ipLabel)
 	c2.Add(ipEntry)
-	c3.Add(portLabel)
+	c3.Add(portBox)
 	c3.Add(portEntry)
 	c4.Add(intervalLabel)
 	c4.Add(intervalEntry)

@@ -6,7 +6,7 @@ import (
 )
 
 var appName = "Steam服务器信息查看器"
-var versionText = "1.0.3"
+var versionText = "1.0.5"
 
 func Start() {
 	log.Debugf("Client start\n")
