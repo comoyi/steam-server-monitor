@@ -22,13 +22,16 @@ var w fyne.Window
 var c *fyne.Container
 var myApp fyne.App
 
+var serverListPanel *fyne.Container
+
+var serverListPanelScroll *container.Scroll
+
 func initUI() {
-	initApp()
+	initMainWindow()
 	initMenu()
-	initToolBar()
 }
 
-func initApp() {
+func initMainWindow() {
 	windowTitle := fmt.Sprintf("%s-v%s", appName, versionText)
 
 	myApp = app.New()
@@ -38,6 +41,14 @@ func initApp() {
 	w.Resize(fyne.NewSize(400, 600))
 	c = container.NewVBox()
 	w.SetContent(c)
+
+	bar := initToolBar()
+	c.Add(bar)
+
+	serverListPanel = container.NewVBox()
+	serverListPanelScroll = container.NewVScroll(serverListPanel)
+	serverListPanelScroll.SetMinSize(fyne.NewSize(400, 600))
+	c.Add(serverListPanelScroll)
 
 }
 
@@ -68,7 +79,7 @@ func initMenu() {
 	w.SetMainMenu(mainMenu)
 }
 
-func initToolBar() {
+func initToolBar() *fyne.Container {
 	cBar := container.NewGridWithColumns(2)
 
 	addBtn := widget.NewButtonWithIcon("", theme2.ContentAddIcon(), func() {
@@ -101,7 +112,7 @@ func initToolBar() {
 	})
 	cBar.Add(saveBtn)
 
-	c.Add(cBar)
+	return cBar
 }
 
 func showAddUI() {
@@ -333,8 +344,8 @@ func bind(server *Server) {
 	detailContainer := container.NewVBox()
 	detailContainer.Add(scroll)
 	panelContainer.Add(detailContainer)
-	c.Add(panelContainer)
-	c.Refresh()
+	serverListPanel.Add(panelContainer)
+	serverListPanel.Refresh()
 }
 
 func resetServerConfig() {
