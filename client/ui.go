@@ -123,6 +123,8 @@ func showEditUI(server *Server) {
 	showServerFormUI(true, server)
 }
 
+var serverFormWindow fyne.Window
+
 func showServerFormUI(isEdit bool, server *Server) {
 	title := "添加服务器"
 	if isEdit {
@@ -131,8 +133,12 @@ func showServerFormUI(isEdit bool, server *Server) {
 		}
 		title = "编辑服务器"
 	}
-	var serverFormWindow fyne.Window
+
+	if serverFormWindow != nil {
+		serverFormWindow.Close()
+	}
 	serverFormWindow = myApp.NewWindow(title)
+
 	c := container.NewVBox()
 	c2 := container.NewAdaptiveGrid(2)
 	c3 := container.NewAdaptiveGrid(2)
@@ -239,7 +245,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 			return
 		}
 
-		serverFormWindow.Hide()
+		serverFormWindow.Close()
 	})
 
 	c2.Add(ipLabel)
