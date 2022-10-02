@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/comoyi/steam-server-monitor/log"
-	"github.com/comoyi/steam-server-monitor/utils/timeutil"
+	"github.com/comoyi/steam-server-monitor/util/timeutil"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/rumblefrog/go-a2s"
 	"sync"
 	"time"
@@ -156,7 +157,8 @@ func refreshUI(server *Server) {
 			maxDurationFormatted = timeutil.FormatDuration(maxDuration)
 		}
 
-		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", info.ServerName))
+		serverNameFixed := bluemonday.StrictPolicy().Sanitize(info.ServerName)
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", serverNameFixed))
 		server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
 		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", maxDurationFormatted))
 

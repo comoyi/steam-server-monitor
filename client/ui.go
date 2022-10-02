@@ -12,7 +12,7 @@ import (
 	"github.com/comoyi/steam-server-monitor/config"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/theme"
-	"github.com/comoyi/steam-server-monitor/utils/dialogutil"
+	"github.com/comoyi/steam-server-monitor/util/dialogutil"
 	"github.com/spf13/viper"
 	"strconv"
 	"time"
@@ -22,13 +22,16 @@ var w fyne.Window
 var c *fyne.Container
 var myApp fyne.App
 
+var serverListPanel *fyne.Container
+
+var serverListPanelScroll *container.Scroll
+
 func initUI() {
-	initApp()
+	initMainWindow()
 	initMenu()
-	initToolBar()
 }
 
-func initApp() {
+func initMainWindow() {
 	windowTitle := fmt.Sprintf("%s-v%s", appName, versionText)
 
 	myApp = app.New()
@@ -38,6 +41,14 @@ func initApp() {
 	w.Resize(fyne.NewSize(400, 600))
 	c = container.NewVBox()
 	w.SetContent(c)
+
+	bar := initToolBar()
+	c.Add(bar)
+
+	serverListPanel = container.NewVBox()
+	serverListPanelScroll = container.NewVScroll(serverListPanel)
+	serverListPanelScroll.SetMinSize(fyne.NewSize(400, 600))
+	c.Add(serverListPanelScroll)
 
 }
 
@@ -68,17 +79,17 @@ func initMenu() {
 	w.SetMainMenu(mainMenu)
 }
 
-func initToolBar() {
+func initToolBar() *fyne.Container {
 	cBar := container.NewGridWithColumns(2)
 
-	addBtn := widget.NewButton("+", func() {
+	addBtn := widget.NewButtonWithIcon("", theme2.ContentAddIcon(), func() {
 		showAddUI()
 	})
 	cBar.Add(addBtn)
 
 	var saveBtn *widget.Button
 	saveText := "保存"
-	saveBtn = widget.NewButtonWithIcon(saveText, theme.CustomTheme.Icon(theme2.IconNameDocumentSave), func() {
+	saveBtn = widget.NewButtonWithIcon(saveText, theme2.DocumentSaveIcon(), func() {
 		saveBtn.Disable()
 		go func() {
 			defer saveBtn.Enable()
@@ -90,15 +101,18 @@ func initToolBar() {
 				return
 			}
 			go func() {
-				saveBtn.SetText("保存成功")
+				saveSuccessText := "保存成功"
+				saveBtn.SetText(saveSuccessText)
 				<-time.After(2 * time.Second)
-				saveBtn.SetText(saveText)
+				if saveBtn.Text == saveSuccessText {
+					saveBtn.SetText(saveText)
+				}
 			}()
 		}()
 	})
 	cBar.Add(saveBtn)
 
-	c.Add(cBar)
+	return cBar
 }
 
 func showAddUI() {
@@ -109,6 +123,8 @@ func showEditUI(server *Server) {
 	showServerFormUI(true, server)
 }
 
+var serverFormWindow fyne.Window
+
 func showServerFormUI(isEdit bool, server *Server) {
 	title := "添加服务器"
 	if isEdit {
@@ -117,8 +133,12 @@ func showServerFormUI(isEdit bool, server *Server) {
 		}
 		title = "编辑服务器"
 	}
-	var serverFormWindow fyne.Window
+
+	if serverFormWindow != nil {
+		serverFormWindow.Close()
+	}
 	serverFormWindow = myApp.NewWindow(title)
+
 	c := container.NewVBox()
 	c2 := container.NewAdaptiveGrid(2)
 	c3 := container.NewAdaptiveGrid(2)
@@ -131,7 +151,14 @@ func showServerFormUI(isEdit bool, server *Server) {
 	if isEdit {
 		ipEntry.SetText(server.Ip)
 	}
+
 	portLabel := widget.NewLabel("端口")
+	portHelpBtn := widget.NewButtonWithIcon("", theme2.HelpIcon(), func() {
+		dialogutil.ShowInformation("", "信息查询端口，\n和主端口可能不同", serverFormWindow)
+	})
+	portBox := container.NewHBox()
+	portBox.Add(portLabel)
+	portBox.Add(portHelpBtn)
 	var portEntry *widget.Entry
 	portEntry = widget.NewEntry()
 	portEntry.SetPlaceHolder("2457")
@@ -218,12 +245,12 @@ func showServerFormUI(isEdit bool, server *Server) {
 			return
 		}
 
-		serverFormWindow.Hide()
+		serverFormWindow.Close()
 	})
 
 	c2.Add(ipLabel)
 	c2.Add(ipEntry)
-	c3.Add(portLabel)
+	c3.Add(portBox)
 	c3.Add(portEntry)
 	c4.Add(intervalLabel)
 	c4.Add(intervalEntry)
@@ -323,7 +350,8 @@ func bind(server *Server) {
 	detailContainer := container.NewVBox()
 	detailContainer.Add(scroll)
 	panelContainer.Add(detailContainer)
-	c.Add(panelContainer)
+	serverListPanel.Add(panelContainer)
+	serverListPanel.Refresh()
 }
 
 func resetServerConfig() {
