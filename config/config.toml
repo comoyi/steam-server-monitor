@@ -1,4 +1,5 @@
-debug = false
+# 日志等级 TRACE DEBUG INFO WARN ERROR OFF
+log_level = 'OFF'
 
 [[servers]]
   ip = "127.0.0.1"

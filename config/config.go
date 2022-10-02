@@ -3,8 +3,10 @@ package config
 import (
 	"fmt"
 	"github.com/comoyi/steam-server-monitor/log"
+	"github.com/comoyi/steam-server-monitor/util/fsutil"
 	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -22,12 +24,19 @@ type Server struct {
 	Remark   string `toml:"remark"`
 }
 
+func initDefaultConfig() {
+	viper.SetDefault("log_level", log.Off)
+}
+
 func LoadConfig() {
 	var err error
 	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath(fmt.Sprintf("%s%s%s", "$HOME", string(os.PathSeparator), ".steam-server-monitor"))
+
+	initDefaultConfig()
+
 	err = viper.ReadInConfig()
 	if err != nil {
 		log.Errorf("Read config failed, err: %v\n", err)
@@ -47,6 +56,12 @@ var saveMutex = &sync.Mutex{}
 func SaveConfig() error {
 	saveMutex.Lock()
 	defer saveMutex.Unlock()
+
+	err := viper.WriteConfig()
+	if err == nil {
+		return nil
+	}
+
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Warnf("Get os.UserHomeDir failed, err: %v\n", err)
@@ -54,39 +69,27 @@ func SaveConfig() error {
 	}
 	log.Debugf("userHomeDir: %s\n", userHomeDir)
 
-	configPath := fmt.Sprintf("%s%s%s", userHomeDir, string(os.PathSeparator), ".steam-server-monitor")
-	configFile := fmt.Sprintf("%s%s%s", configPath, string(os.PathSeparator), "config.toml")
+	configPath := filepath.Join(userHomeDir, ".steam-server-monitor")
+	configFile := filepath.Join(configPath, "config.toml")
 	log.Debugf("configFile: %s\n", configFile)
 
-	exist, err := isPathExist(configPath)
+	exist, err := fsutil.Exists(configPath)
 	if err != nil {
 		log.Warnf("Check isPathExist failed, err: %v\n", err)
 		return err
 	}
 	if !exist {
-		err = os.Mkdir(configPath, os.ModePerm)
+		err = os.MkdirAll(configPath, os.ModePerm)
 		if err != nil {
-			log.Warnf("Get os.Mkdir failed, err: %v\n", err)
+			log.Warnf("Get os.MkdirAll failed, err: %v\n", err)
 			return err
 		}
 	}
 
 	err = viper.WriteConfigAs(configFile)
 	if err != nil {
-		log.Errorf("SafeWriteConfigAs failed, err: %v\n", err)
+		log.Errorf("WriteConfigAs failed, err: %v\n", err)
 		return err
 	}
 	return nil
-}
-
-func isPathExist(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-
-		return false, err
-	}
-	return true, nil
 }
