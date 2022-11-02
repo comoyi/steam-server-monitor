@@ -1,12 +1,13 @@
 package config
 
 import (
-	"fmt"
+	"fyne.io/fyne/v2/app"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/util/fsutil"
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 )
 
@@ -33,7 +34,13 @@ func LoadConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
-	viper.AddConfigPath(fmt.Sprintf("%s%s%s", "$HOME", string(os.PathSeparator), ".steam-server-monitor"))
+
+	configDirPath, err := getConfigDirPath()
+	if err != nil {
+		log.Warnf("Get configDirPath failed, err: %v\n", err)
+		return
+	}
+	viper.AddConfigPath(configDirPath)
 
 	initDefaultConfig()
 
@@ -62,24 +69,21 @@ func SaveConfig() error {
 		return nil
 	}
 
-	userHomeDir, err := os.UserHomeDir()
+	configDirPath, err := getConfigDirPath()
 	if err != nil {
-		log.Warnf("Get os.UserHomeDir failed, err: %v\n", err)
+		log.Warnf("Get configDirPath failed, err: %v\n", err)
 		return err
 	}
-	log.Debugf("userHomeDir: %s\n", userHomeDir)
-
-	configPath := filepath.Join(userHomeDir, ".steam-server-monitor")
-	configFile := filepath.Join(configPath, "config.toml")
+	configFile := filepath.Join(configDirPath, "config.toml")
 	log.Debugf("configFile: %s\n", configFile)
 
-	exist, err := fsutil.Exists(configPath)
+	exist, err := fsutil.Exists(configDirPath)
 	if err != nil {
 		log.Warnf("Check isPathExist failed, err: %v\n", err)
 		return err
 	}
 	if !exist {
-		err = os.MkdirAll(configPath, os.ModePerm)
+		err = os.MkdirAll(configDirPath, os.ModePerm)
 		if err != nil {
 			log.Warnf("Get os.MkdirAll failed, err: %v\n", err)
 			return err
@@ -92,4 +96,28 @@ func SaveConfig() error {
 		return err
 	}
 	return nil
+}
+
+func getConfigDirPath() (string, error) {
+	configRootPath, err := getConfigRootPath()
+	if err != nil {
+		return "", err
+	}
+
+	configPath := filepath.Join(configRootPath, ".steam-server-monitor")
+	return configPath, nil
+}
+
+func getConfigRootPath() (string, error) {
+	var err error
+	configRootPath := ""
+	if runtime.GOOS == "android" {
+		configRootPath = app.NewWithID("com.comoyi.steamservermonitor").Storage().RootURI().Path()
+	} else {
+		configRootPath, err = os.UserHomeDir()
+		if err != nil {
+			return configRootPath, err
+		}
+	}
+	return configRootPath, nil
 }

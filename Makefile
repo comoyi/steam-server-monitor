@@ -29,6 +29,15 @@ package-windows:
 	cp config/config.toml target/windows/
 	cd target/windows && zip steam-server-monitor-$(X_APP_VERSION)-windows.zip config.toml steam-server-monitor.exe && cd -
 
+.PHONY: package-android
+package-android:
+	ANDROID_HOME=~/Android/Sdk ANDROID_NDK_HOME=~/Android/Sdk/ndk/23.2.8568313 fyne package --release --target android --appID com.comoyi.steamservermonitor --name steam_server_monitor
+	mkdir -p target/android
+	mv steam_server_monitor.aab target/android/steam_server_monitor_$(X_APP_VERSION).aab
+	bundletool build-apks --overwrite --mode=universal --bundle target/android/steam_server_monitor_$(X_APP_VERSION).aab --output target/android/steam_server_monitor_$(X_APP_VERSION).apks --ks ~/.jks/bundle.jks --ks-pass file:.jks-pass --ks-key-alias key1 --key-pass file:.jks-pass
+	unzip -o -d target/android target/android/steam_server_monitor_$(X_APP_VERSION).apks
+	mv target/android/universal.apk target/android/steam_server_monitor_$(X_APP_VERSION).apk
+
 .PHONY: clean
 clean:
 	rm -rf target
