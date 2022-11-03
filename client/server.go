@@ -144,6 +144,10 @@ func refreshUI(server *Server) {
 
 	if server.DisplayName != "" {
 		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", server.DisplayName))
+	} else {
+		if info == nil {
+			server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", "-"))
+		}
 	}
 	server.ViewData.Remark.Set(fmt.Sprintf("备注：%s", server.Remark))
 

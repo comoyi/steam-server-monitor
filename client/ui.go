@@ -14,6 +14,7 @@ import (
 	"github.com/comoyi/steam-server-monitor/theme"
 	"github.com/comoyi/steam-server-monitor/util/dialogutil"
 	"github.com/spf13/viper"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -41,6 +42,12 @@ func initMainWindow() {
 	w.Resize(fyne.NewSize(400, 600))
 	c = container.NewVBox()
 	w.SetContent(c)
+
+	if runtime.GOOS == "android" {
+		hc := container.NewCenter()
+		hc.Add(widget.NewLabel(windowTitle))
+		c.Add(hc)
+	}
 
 	bar := initToolBar()
 	c.Add(bar)
@@ -195,8 +202,8 @@ func showServerFormUI(isEdit bool, server *Server) {
 	if isEdit {
 		btnText = "保存"
 	}
+	displayName := displayNameEntry.Text
 	submitBtn := widget.NewButton(btnText, func() {
-		displayName := displayNameEntry.Text
 		ip := ipEntry.Text
 		if ip == "" {
 			dialogutil.ShowInformation("提示", "请输入IP", serverFormWindow)
@@ -259,6 +266,27 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 		serverFormWindow.Close()
 	})
+	submitBtn.SetIcon(theme2.DocumentSaveIcon())
+
+	var removeBtn *widget.Button
+	removeBtn = widget.NewButtonWithIcon("", theme2.DeleteIcon(), func() {
+		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel(fmt.Sprintf("确定删除吗\n%s", displayName)), func(b bool) {
+			if b {
+				serverContainer.RemoveServer(server)
+				resetServerConfig()
+				err := config.SaveConfig()
+				if err != nil {
+					dialogutil.ShowInformation("提示", "保存失败", serverFormWindow)
+					return
+				}
+				//panelContainer.Hide()
+				serverFormWindow.Close()
+			}
+		}, serverFormWindow).Show()
+	})
+	if !isEdit {
+		removeBtn.Disable()
+	}
 
 	c1.Add(displayNameLabel)
 	c1.Add(displayNameEntry)
@@ -275,7 +303,14 @@ func showServerFormUI(isEdit bool, server *Server) {
 	c.Add(c3)
 	c.Add(c4)
 	c.Add(c5)
-	c.Add(submitBtn)
+	cop1 := container.NewGridWithColumns(2)
+	cop2 := container.NewVBox()
+	cop3 := container.NewVBox()
+	cop1.Add(cop2)
+	cop2.Add(removeBtn)
+	cop1.Add(cop3)
+	cop3.Add(submitBtn)
+	c.Add(cop1)
 
 	serverFormWindow.SetContent(c)
 	serverFormWindow.Show()
@@ -283,7 +318,11 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 func bind(server *Server) {
 	serverName := binding.NewString()
-	serverName.Set(fmt.Sprintf("服务器名称：%s", "-"))
+	displayName := "-"
+	if server.DisplayName != "" {
+		displayName = server.DisplayName
+	}
+	serverName.Set(fmt.Sprintf("服务器名称：%s", displayName))
 	playerCount := binding.NewString()
 	playerCount.Set(fmt.Sprintf("在线人数：%s", "-"))
 	maxDurationInfo := binding.NewString()
@@ -322,26 +361,11 @@ func bind(server *Server) {
 		showEditUI(server)
 	})
 	editBtn.SetIcon(theme2.DocumentCreateIcon())
-	var removeBtn *widget.Button
-	removeBtn = widget.NewButtonWithIcon("", theme2.DeleteIcon(), func() {
-		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel("确定删除吗"), func(b bool) {
-			if b {
-				serverContainer.RemoveServer(server)
-				resetServerConfig()
-				err := config.SaveConfig()
-				if err != nil {
-					dialogutil.ShowInformation("提示", "保存失败", w)
-					return
-				}
-				panelContainer.Hide()
-			}
-		}, w).Show()
-	})
 
 	overviewContainer := container.NewHBox()
 	b1 := container.NewVBox()
 	overviewContainer.Add(b1)
-	b2 := container.NewVBox()
+	b2 := container.NewHBox()
 	b3 := container.NewHBox()
 	b6 := container.NewVBox()
 	b7 := container.NewHBox()
@@ -351,17 +375,16 @@ func bind(server *Server) {
 	b1.Add(b7)
 	b4 := container.NewVBox()
 	b5 := container.NewVBox()
+	b3.Add(toggleBtn)
 	b3.Add(b4)
 	b3.Add(b5)
+	b2.Add(editBtn)
 	b2.Add(widget.NewLabelWithData(serverName))
 	b4.Add(widget.NewLabelWithData(playerCount))
 	b5.Add(widget.NewLabelWithData(maxDurationInfo))
 	if server.Remark != "" {
 		b6.Add(widget.NewLabelWithData(remarkInfo))
 	}
-	b7.Add(toggleBtn)
-	b7.Add(editBtn)
-	b7.Add(removeBtn)
 
 	panelContainer.Add(overviewContainer)
 
