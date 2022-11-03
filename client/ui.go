@@ -140,10 +140,20 @@ func showServerFormUI(isEdit bool, server *Server) {
 	serverFormWindow = myApp.NewWindow(title)
 
 	c := container.NewVBox()
+	c1 := container.NewAdaptiveGrid(2)
 	c2 := container.NewAdaptiveGrid(2)
 	c3 := container.NewAdaptiveGrid(2)
 	c4 := container.NewAdaptiveGrid(2)
 	c5 := container.NewAdaptiveGrid(2)
+
+	displayNameLabel := widget.NewLabel("显示名称")
+	var displayNameEntry *widget.Entry
+	displayNameEntry = widget.NewEntry()
+	displayNameEntry.SetPlaceHolder("默认为服务器名称")
+	if isEdit {
+		displayNameEntry.SetText(server.DisplayName)
+	}
+
 	ipLabel := widget.NewLabel("IP")
 	var ipEntry *widget.Entry
 	ipEntry = widget.NewEntry()
@@ -186,6 +196,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 		btnText = "保存"
 	}
 	submitBtn := widget.NewButton(btnText, func() {
+		displayName := displayNameEntry.Text
 		ip := ipEntry.Text
 		if ip == "" {
 			dialogutil.ShowInformation("提示", "请输入IP", serverFormWindow)
@@ -225,13 +236,14 @@ func showServerFormUI(isEdit bool, server *Server) {
 		remark := remarkEntry.Text
 
 		if isEdit {
+			server.DisplayName = displayName
 			server.Ip = ip
 			server.Port = port
 			server.UpdateInterval(interval)
 			server.Remark = remark
 			refreshUI(server)
 		} else {
-			newServer := NewServer(ip, port, interval, remark)
+			newServer := NewServer(displayName, ip, port, interval, remark)
 			serverContainer.AddServer(newServer)
 			bind(newServer)
 			newServer.Start()
@@ -248,6 +260,8 @@ func showServerFormUI(isEdit bool, server *Server) {
 		serverFormWindow.Close()
 	})
 
+	c1.Add(displayNameLabel)
+	c1.Add(displayNameEntry)
 	c2.Add(ipLabel)
 	c2.Add(ipEntry)
 	c3.Add(portBox)
@@ -256,6 +270,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 	c4.Add(intervalEntry)
 	c5.Add(remarkLabel)
 	c5.Add(remarkEntry)
+	c.Add(c1)
 	c.Add(c2)
 	c.Add(c3)
 	c.Add(c4)
@@ -290,7 +305,6 @@ func bind(server *Server) {
 
 	var scroll *container.Scroll
 
-	overviewContainer := container.NewHBox()
 	var toggleBtn *widget.Button
 	toggleBtn = widget.NewButton("→", func() {
 		if scroll != nil {
@@ -304,11 +318,12 @@ func bind(server *Server) {
 		}
 	})
 	var editBtn *widget.Button
-	editBtn = widget.NewButton("编辑", func() {
+	editBtn = widget.NewButton("", func() {
 		showEditUI(server)
 	})
+	editBtn.SetIcon(theme2.DocumentCreateIcon())
 	var removeBtn *widget.Button
-	removeBtn = widget.NewButton("-", func() {
+	removeBtn = widget.NewButtonWithIcon("", theme2.DeleteIcon(), func() {
 		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel("确定删除吗"), func(b bool) {
 			if b {
 				serverContainer.RemoveServer(server)
@@ -322,13 +337,31 @@ func bind(server *Server) {
 			}
 		}, w).Show()
 	})
-	overviewContainer.Add(toggleBtn)
-	overviewContainer.Add(editBtn)
-	overviewContainer.Add(removeBtn)
-	overviewContainer.Add(widget.NewLabelWithData(serverName))
-	overviewContainer.Add(widget.NewLabelWithData(playerCount))
-	overviewContainer.Add(widget.NewLabelWithData(maxDurationInfo))
-	overviewContainer.Add(widget.NewLabelWithData(remarkInfo))
+
+	overviewContainer := container.NewHBox()
+	b1 := container.NewVBox()
+	overviewContainer.Add(b1)
+	b2 := container.NewVBox()
+	b3 := container.NewHBox()
+	b6 := container.NewVBox()
+	b7 := container.NewHBox()
+	b1.Add(b2)
+	b1.Add(b3)
+	b1.Add(b6)
+	b1.Add(b7)
+	b4 := container.NewVBox()
+	b5 := container.NewVBox()
+	b3.Add(b4)
+	b3.Add(b5)
+	b2.Add(widget.NewLabelWithData(serverName))
+	b4.Add(widget.NewLabelWithData(playerCount))
+	b5.Add(widget.NewLabelWithData(maxDurationInfo))
+	if server.Remark != "" {
+		b6.Add(widget.NewLabelWithData(remarkInfo))
+	}
+	b7.Add(toggleBtn)
+	b7.Add(editBtn)
+	b7.Add(removeBtn)
 
 	panelContainer.Add(overviewContainer)
 
@@ -358,10 +391,11 @@ func resetServerConfig() {
 	serverConfig := make([]map[string]interface{}, 0)
 	for _, server := range serverContainer.GetServers() {
 		serverConfig = append(serverConfig, map[string]interface{}{
-			"ip":       server.Ip,
-			"port":     server.Port,
-			"interval": server.Interval,
-			"remark":   server.Remark,
+			"display_name": server.DisplayName,
+			"ip":           server.Ip,
+			"port":         server.Port,
+			"interval":     server.Interval,
+			"remark":       server.Remark,
 		})
 	}
 	viper.Set("servers", serverConfig)

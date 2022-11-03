@@ -49,6 +49,7 @@ func (sc *ServerContainer) RemoveServer(server *Server) {
 }
 
 type Server struct {
+	DisplayName    string
 	Name           string
 	Ip             string
 	Port           int64
@@ -59,12 +60,13 @@ type Server struct {
 	ViewData       *ViewData
 }
 
-func NewServer(ip string, port int64, interval int64, remark string) *Server {
+func NewServer(displayName string, ip string, port int64, interval int64, remark string) *Server {
 	if interval <= 0 {
 		interval = 10
 	}
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	return &Server{
+		DisplayName:    displayName,
 		Ip:             ip,
 		Port:           port,
 		Interval:       interval,
@@ -140,6 +142,9 @@ func refreshUI(server *Server) {
 	}
 	log.Debugf("infoJson: %s\n", infoJson)
 
+	if server.DisplayName != "" {
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", server.DisplayName))
+	}
 	server.ViewData.Remark.Set(fmt.Sprintf("备注：%s", server.Remark))
 
 	if info != nil {
@@ -157,7 +162,12 @@ func refreshUI(server *Server) {
 			maxDurationFormatted = timeutil.FormatDuration(maxDuration)
 		}
 
-		serverNameFixed := bluemonday.StrictPolicy().Sanitize(info.ServerName)
+		serverNameFixed := ""
+		if server.DisplayName != "" {
+			serverNameFixed = server.DisplayName
+		} else {
+			serverNameFixed = bluemonday.StrictPolicy().Sanitize(info.ServerName)
+		}
 		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", serverNameFixed))
 		server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
 		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", maxDurationFormatted))

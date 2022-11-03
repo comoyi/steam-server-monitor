@@ -2,11 +2,13 @@
 log_level = 'OFF'
 
 [[servers]]
-  ip = "127.0.0.1"
+  display_name = ''
+  ip = '127.0.0.1'
   port = 2457
   interval = 5
 
 [[servers]]
-  ip = "127.0.0.2"
+  display_name = ''
+  ip = '127.0.0.2'
   port = 2457
   interval = 10
