@@ -142,7 +142,10 @@ func showServerFormUI(isEdit bool, server *Server) {
 	}
 
 	if serverFormWindow != nil {
-		serverFormWindow.Close()
+		// prevent error exit on android
+		if runtime.GOOS != "android" {
+			serverFormWindow.Close()
+		}
 	}
 	serverFormWindow = myApp.NewWindow(title)
 
