@@ -279,6 +279,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 					dialogutil.ShowInformation("提示", "保存失败", serverFormWindow)
 					return
 				}
+				// TODO remove UI container
 				//panelContainer.Hide()
 				serverFormWindow.Close()
 			}
