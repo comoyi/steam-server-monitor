@@ -323,11 +323,11 @@ func bind(server *Server) {
 	if server.DisplayName != "" {
 		displayName = server.DisplayName
 	}
-	serverName.Set(fmt.Sprintf("服务器名称：%s", displayName))
+	serverName.Set(fmt.Sprintf("服务器：%s", displayName))
 	playerCount := binding.NewString()
 	playerCount.Set(fmt.Sprintf("在线人数：%s", "-"))
 	maxDurationInfo := binding.NewString()
-	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", "-"))
+	maxDurationInfo.Set(fmt.Sprintf("最长在线：%s", "-"))
 	remarkInfo := binding.NewString()
 	remarkInfo.Set(fmt.Sprintf("备注：%s", server.Remark))
 

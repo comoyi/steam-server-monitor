@@ -143,10 +143,10 @@ func refreshUI(server *Server) {
 	log.Debugf("infoJson: %s\n", infoJson)
 
 	if server.DisplayName != "" {
-		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", server.DisplayName))
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器：%s", server.DisplayName))
 	} else {
 		if info == nil {
-			server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", "-"))
+			server.ViewData.ServerName.Set(fmt.Sprintf("服务器：%s", "-"))
 		}
 	}
 	server.ViewData.Remark.Set(fmt.Sprintf("备注：%s", server.Remark))
@@ -172,9 +172,9 @@ func refreshUI(server *Server) {
 		} else {
 			serverNameFixed = bluemonday.StrictPolicy().Sanitize(info.ServerName)
 		}
-		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", serverNameFixed))
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器：%s", serverNameFixed))
 		server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
-		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", maxDurationFormatted))
+		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长在线：%s", maxDurationFormatted))
 
 		playerInfoList := make([]string, 0)
 		for i, p := range info.Players {
