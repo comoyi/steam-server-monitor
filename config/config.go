@@ -14,8 +14,8 @@ import (
 var Conf Config
 
 type Config struct {
-	Debug   bool      `toml:"debug"`
-	Servers []*Server `toml:"servers"`
+	LogLevel string    `toml:"log_level" mapstructure:"log_level"`
+	Servers  []*Server `toml:"servers" mapstructure:"servers"`
 }
 
 type Server struct {
