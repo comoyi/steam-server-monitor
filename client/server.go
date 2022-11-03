@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/util/timeutil"
@@ -49,6 +50,7 @@ func (sc *ServerContainer) RemoveServer(server *Server) {
 }
 
 type Server struct {
+	DisplayName    string
 	Name           string
 	Ip             string
 	Port           int64
@@ -57,14 +59,16 @@ type Server struct {
 	Remark         string
 	Info           *Info
 	ViewData       *ViewData
+	Container      *fyne.Container
 }
 
-func NewServer(ip string, port int64, interval int64, remark string) *Server {
+func NewServer(displayName string, ip string, port int64, interval int64, remark string) *Server {
 	if interval <= 0 {
 		interval = 10
 	}
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	return &Server{
+		DisplayName:    displayName,
 		Ip:             ip,
 		Port:           port,
 		Interval:       interval,
@@ -140,6 +144,13 @@ func refreshUI(server *Server) {
 	}
 	log.Debugf("infoJson: %s\n", infoJson)
 
+	if server.DisplayName != "" {
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器：%s", server.DisplayName))
+	} else {
+		if info == nil {
+			server.ViewData.ServerName.Set(fmt.Sprintf("服务器：%s", "-"))
+		}
+	}
 	server.ViewData.Remark.Set(fmt.Sprintf("备注：%s", server.Remark))
 
 	if info != nil {
@@ -157,10 +168,15 @@ func refreshUI(server *Server) {
 			maxDurationFormatted = timeutil.FormatDuration(maxDuration)
 		}
 
-		serverNameFixed := bluemonday.StrictPolicy().Sanitize(info.ServerName)
-		server.ViewData.ServerName.Set(fmt.Sprintf("服务器名称：%s", serverNameFixed))
+		serverNameFixed := ""
+		if server.DisplayName != "" {
+			serverNameFixed = server.DisplayName
+		} else {
+			serverNameFixed = bluemonday.StrictPolicy().Sanitize(info.ServerName)
+		}
+		server.ViewData.ServerName.Set(fmt.Sprintf("服务器：%s", serverNameFixed))
 		server.ViewData.PlayerCount.Set(fmt.Sprintf("在线人数：%d", info.PlayerCount))
-		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", maxDurationFormatted))
+		server.ViewData.MaxDurationInfo.Set(fmt.Sprintf("最长在线：%s", maxDurationFormatted))
 
 		playerInfoList := make([]string, 0)
 		for i, p := range info.Players {

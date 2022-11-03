@@ -19,10 +19,11 @@ type Config struct {
 }
 
 type Server struct {
-	Ip       string `toml:"ip"`
-	Port     int64  `toml:"port"`
-	Interval int64  `toml:"interval"`
-	Remark   string `toml:"remark"`
+	DisplayName string `toml:"display_name" mapstructure:"display_name"`
+	Ip          string `toml:"ip" mapstructure:"ip"`
+	Port        int64  `toml:"port" mapstructure:"port"`
+	Interval    int64  `toml:"interval" mapstructure:"interval"`
+	Remark      string `toml:"remark" mapstructure:"remark"`
 }
 
 func initDefaultConfig() {

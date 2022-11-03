@@ -24,7 +24,7 @@ func Start() {
 
 func loadServers() {
 	for _, s := range config.Conf.Servers {
-		server := NewServer(s.Ip, s.Port, s.Interval, s.Remark)
+		server := NewServer(s.DisplayName, s.Ip, s.Port, s.Interval, s.Remark)
 		serverContainer.AddServer(server)
 	}
 }

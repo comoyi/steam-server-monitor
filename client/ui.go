@@ -14,6 +14,7 @@ import (
 	"github.com/comoyi/steam-server-monitor/theme"
 	"github.com/comoyi/steam-server-monitor/util/dialogutil"
 	"github.com/spf13/viper"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -41,6 +42,12 @@ func initMainWindow() {
 	w.Resize(fyne.NewSize(400, 600))
 	c = container.NewVBox()
 	w.SetContent(c)
+
+	if runtime.GOOS == "android" {
+		hc := container.NewCenter()
+		hc.Add(widget.NewLabel(windowTitle))
+		c.Add(hc)
+	}
 
 	bar := initToolBar()
 	c.Add(bar)
@@ -135,15 +142,28 @@ func showServerFormUI(isEdit bool, server *Server) {
 	}
 
 	if serverFormWindow != nil {
-		serverFormWindow.Close()
+		// prevent error exit on android
+		if runtime.GOOS != "android" {
+			serverFormWindow.Close()
+		}
 	}
 	serverFormWindow = myApp.NewWindow(title)
 
 	c := container.NewVBox()
+	c1 := container.NewAdaptiveGrid(2)
 	c2 := container.NewAdaptiveGrid(2)
 	c3 := container.NewAdaptiveGrid(2)
 	c4 := container.NewAdaptiveGrid(2)
 	c5 := container.NewAdaptiveGrid(2)
+
+	displayNameLabel := widget.NewLabel("显示名称")
+	var displayNameEntry *widget.Entry
+	displayNameEntry = widget.NewEntry()
+	displayNameEntry.SetPlaceHolder("默认为服务器名称")
+	if isEdit {
+		displayNameEntry.SetText(server.DisplayName)
+	}
+
 	ipLabel := widget.NewLabel("IP")
 	var ipEntry *widget.Entry
 	ipEntry = widget.NewEntry()
@@ -185,6 +205,7 @@ func showServerFormUI(isEdit bool, server *Server) {
 	if isEdit {
 		btnText = "保存"
 	}
+	displayName := displayNameEntry.Text
 	submitBtn := widget.NewButton(btnText, func() {
 		ip := ipEntry.Text
 		if ip == "" {
@@ -225,13 +246,14 @@ func showServerFormUI(isEdit bool, server *Server) {
 		remark := remarkEntry.Text
 
 		if isEdit {
+			server.DisplayName = displayName
 			server.Ip = ip
 			server.Port = port
 			server.UpdateInterval(interval)
 			server.Remark = remark
 			refreshUI(server)
 		} else {
-			newServer := NewServer(ip, port, interval, remark)
+			newServer := NewServer(displayName, ip, port, interval, remark)
 			serverContainer.AddServer(newServer)
 			bind(newServer)
 			newServer.Start()
@@ -247,7 +269,33 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 		serverFormWindow.Close()
 	})
+	submitBtn.SetIcon(theme2.DocumentSaveIcon())
 
+	var removeBtn *widget.Button
+	removeBtn = widget.NewButtonWithIcon("", theme2.DeleteIcon(), func() {
+		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel(fmt.Sprintf("确定删除吗\n%s", displayName)), func(b bool) {
+			if b {
+				serverContainer.RemoveServer(server)
+				resetServerConfig()
+				err := config.SaveConfig()
+				if err != nil {
+					dialogutil.ShowInformation("提示", "保存失败", serverFormWindow)
+					return
+				}
+
+				// remove UI container
+				serverListPanel.Remove(server.Container)
+
+				serverFormWindow.Close()
+			}
+		}, serverFormWindow).Show()
+	})
+	if !isEdit {
+		removeBtn.Disable()
+	}
+
+	c1.Add(displayNameLabel)
+	c1.Add(displayNameEntry)
 	c2.Add(ipLabel)
 	c2.Add(ipEntry)
 	c3.Add(portBox)
@@ -256,11 +304,19 @@ func showServerFormUI(isEdit bool, server *Server) {
 	c4.Add(intervalEntry)
 	c5.Add(remarkLabel)
 	c5.Add(remarkEntry)
+	c.Add(c1)
 	c.Add(c2)
 	c.Add(c3)
 	c.Add(c4)
 	c.Add(c5)
-	c.Add(submitBtn)
+	cop1 := container.NewGridWithColumns(2)
+	cop2 := container.NewVBox()
+	cop3 := container.NewVBox()
+	cop1.Add(cop2)
+	cop2.Add(removeBtn)
+	cop1.Add(cop3)
+	cop3.Add(submitBtn)
+	c.Add(cop1)
 
 	serverFormWindow.SetContent(c)
 	serverFormWindow.Show()
@@ -268,11 +324,15 @@ func showServerFormUI(isEdit bool, server *Server) {
 
 func bind(server *Server) {
 	serverName := binding.NewString()
-	serverName.Set(fmt.Sprintf("服务器名称：%s", "-"))
+	displayName := "-"
+	if server.DisplayName != "" {
+		displayName = server.DisplayName
+	}
+	serverName.Set(fmt.Sprintf("服务器：%s", displayName))
 	playerCount := binding.NewString()
 	playerCount.Set(fmt.Sprintf("在线人数：%s", "-"))
 	maxDurationInfo := binding.NewString()
-	maxDurationInfo.Set(fmt.Sprintf("最长连续在线：%s", "-"))
+	maxDurationInfo.Set(fmt.Sprintf("最长在线：%s", "-"))
 	remarkInfo := binding.NewString()
 	remarkInfo.Set(fmt.Sprintf("备注：%s", server.Remark))
 
@@ -287,48 +347,51 @@ func bind(server *Server) {
 	}
 
 	panelContainer := container.NewVBox()
+	server.Container = panelContainer
 
-	var scroll *container.Scroll
+	var detailContainer *fyne.Container
 
-	overviewContainer := container.NewHBox()
 	var toggleBtn *widget.Button
 	toggleBtn = widget.NewButton("→", func() {
-		if scroll != nil {
-			if scroll.Visible() {
-				scroll.Hide()
+		if detailContainer != nil {
+			if detailContainer.Visible() {
+				detailContainer.Hide()
 				toggleBtn.SetText("→")
 			} else {
-				scroll.Show()
+				detailContainer.Show()
 				toggleBtn.SetText("↓")
 			}
 		}
 	})
 	var editBtn *widget.Button
-	editBtn = widget.NewButton("编辑", func() {
+	editBtn = widget.NewButton("", func() {
 		showEditUI(server)
 	})
-	var removeBtn *widget.Button
-	removeBtn = widget.NewButton("-", func() {
-		dialog.NewCustomConfirm("提示", "确定", "取消", widget.NewLabel("确定删除吗"), func(b bool) {
-			if b {
-				serverContainer.RemoveServer(server)
-				resetServerConfig()
-				err := config.SaveConfig()
-				if err != nil {
-					dialogutil.ShowInformation("提示", "保存失败", w)
-					return
-				}
-				panelContainer.Hide()
-			}
-		}, w).Show()
-	})
-	overviewContainer.Add(toggleBtn)
-	overviewContainer.Add(editBtn)
-	overviewContainer.Add(removeBtn)
-	overviewContainer.Add(widget.NewLabelWithData(serverName))
-	overviewContainer.Add(widget.NewLabelWithData(playerCount))
-	overviewContainer.Add(widget.NewLabelWithData(maxDurationInfo))
-	overviewContainer.Add(widget.NewLabelWithData(remarkInfo))
+	editBtn.SetIcon(theme2.DocumentCreateIcon())
+
+	overviewContainer := container.NewHBox()
+	b1 := container.NewVBox()
+	overviewContainer.Add(b1)
+	b2 := container.NewHBox()
+	b3 := container.NewHBox()
+	b6 := container.NewVBox()
+	b7 := container.NewHBox()
+	b1.Add(b2)
+	b1.Add(b3)
+	b1.Add(b6)
+	b1.Add(b7)
+	b4 := container.NewVBox()
+	b5 := container.NewVBox()
+	b3.Add(toggleBtn)
+	b3.Add(b4)
+	b3.Add(b5)
+	b2.Add(editBtn)
+	b2.Add(widget.NewLabelWithData(serverName))
+	b4.Add(widget.NewLabelWithData(playerCount))
+	b5.Add(widget.NewLabelWithData(maxDurationInfo))
+	if server.Remark != "" {
+		b6.Add(widget.NewLabelWithData(remarkInfo))
+	}
 
 	panelContainer.Add(overviewContainer)
 
@@ -344,10 +407,11 @@ func bind(server *Server) {
 		}
 		_ = s.Set(sNew)
 	})
+
+	var scroll *container.Scroll
 	scroll = container.NewVScroll(list)
-	scroll.SetMinSize(fyne.NewSize(0, 175))
-	scroll.Hide()
-	detailContainer := container.NewVBox()
+	detailContainer = container.NewGridWrap(fyne.NewSize(270, 190))
+	detailContainer.Hide()
 	detailContainer.Add(scroll)
 	panelContainer.Add(detailContainer)
 	serverListPanel.Add(panelContainer)
@@ -358,10 +422,11 @@ func resetServerConfig() {
 	serverConfig := make([]map[string]interface{}, 0)
 	for _, server := range serverContainer.GetServers() {
 		serverConfig = append(serverConfig, map[string]interface{}{
-			"ip":       server.Ip,
-			"port":     server.Port,
-			"interval": server.Interval,
-			"remark":   server.Remark,
+			"display_name": server.DisplayName,
+			"ip":           server.Ip,
+			"port":         server.Port,
+			"interval":     server.Interval,
+			"remark":       server.Remark,
 		})
 	}
 	viper.Set("servers", serverConfig)
