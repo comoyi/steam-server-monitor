@@ -282,8 +282,10 @@ func showServerFormUI(isEdit bool, server *Server) {
 					dialogutil.ShowInformation("提示", "保存失败", serverFormWindow)
 					return
 				}
-				// TODO remove UI container
-				//panelContainer.Hide()
+
+				// remove UI container
+				serverListPanel.Remove(server.Container)
+
 				serverFormWindow.Close()
 			}
 		}, serverFormWindow).Show()
@@ -345,6 +347,7 @@ func bind(server *Server) {
 	}
 
 	panelContainer := container.NewVBox()
+	server.Container = panelContainer
 
 	var scroll *container.Scroll
 

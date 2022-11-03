@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/comoyi/steam-server-monitor/util/timeutil"
@@ -58,6 +59,7 @@ type Server struct {
 	Remark         string
 	Info           *Info
 	ViewData       *ViewData
+	Container      *fyne.Container
 }
 
 func NewServer(displayName string, ip string, port int64, interval int64, remark string) *Server {
