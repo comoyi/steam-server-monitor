@@ -349,16 +349,16 @@ func bind(server *Server) {
 	panelContainer := container.NewVBox()
 	server.Container = panelContainer
 
-	var scroll *container.Scroll
+	var detailContainer *fyne.Container
 
 	var toggleBtn *widget.Button
 	toggleBtn = widget.NewButton("→", func() {
-		if scroll != nil {
-			if scroll.Visible() {
-				scroll.Hide()
+		if detailContainer != nil {
+			if detailContainer.Visible() {
+				detailContainer.Hide()
 				toggleBtn.SetText("→")
 			} else {
-				scroll.Show()
+				detailContainer.Show()
 				toggleBtn.SetText("↓")
 			}
 		}
@@ -407,10 +407,11 @@ func bind(server *Server) {
 		}
 		_ = s.Set(sNew)
 	})
+
+	var scroll *container.Scroll
 	scroll = container.NewVScroll(list)
-	scroll.SetMinSize(fyne.NewSize(0, 175))
-	scroll.Hide()
-	detailContainer := container.NewVBox()
+	detailContainer = container.NewGridWrap(fyne.NewSize(270, 190))
+	detailContainer.Hide()
 	detailContainer.Add(scroll)
 	panelContainer.Add(detailContainer)
 	serverListPanel.Add(panelContainer)
