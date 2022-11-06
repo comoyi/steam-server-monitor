@@ -117,7 +117,7 @@ func getConfigRootPath() (string, error) {
 	} else {
 		configRootPath, err = os.UserHomeDir()
 		if err != nil {
-			return configRootPath, err
+			return "", err
 		}
 	}
 	return configRootPath, nil
