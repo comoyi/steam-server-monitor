@@ -374,11 +374,12 @@ func bind(server *Server) {
 	overviewContainer.Add(b1)
 	b2 := container.NewHBox()
 	b3 := container.NewHBox()
-	b6 := container.NewVBox()
+	detailContainer = container.NewHBox()
+	detailContainer.Hide()
 	b7 := container.NewHBox()
 	b1.Add(b2)
 	b1.Add(b3)
-	b1.Add(b6)
+	b1.Add(detailContainer)
 	b1.Add(b7)
 	b4 := container.NewVBox()
 	b5 := container.NewVBox()
@@ -389,11 +390,6 @@ func bind(server *Server) {
 	b2.Add(widget.NewLabelWithData(serverName))
 	b4.Add(widget.NewLabelWithData(playerCount))
 	b5.Add(widget.NewLabelWithData(maxDurationInfo))
-	if server.Remark != "" {
-		b6.Add(widget.NewLabelWithData(remarkInfo))
-	}
-
-	panelContainer.Add(overviewContainer)
 
 	list := widget.NewListWithData(dataList, func() fyne.CanvasObject {
 		return widget.NewLabel("")
@@ -410,10 +406,17 @@ func bind(server *Server) {
 
 	var scroll *container.Scroll
 	scroll = container.NewVScroll(list)
-	detailContainer = container.NewGridWrap(fyne.NewSize(270, 190))
-	detailContainer.Hide()
-	detailContainer.Add(scroll)
-	panelContainer.Add(detailContainer)
+	detailListContainer := container.NewGridWrap(fyne.NewSize(250, 190))
+	detailListContainer.Add(scroll)
+
+	detailContainer.Add(container.NewGridWrap(fyne.NewSize(40, 40)))
+	detailContainer.Add(detailListContainer)
+	if server.Remark != "" {
+		b7.Add(container.NewGridWrap(fyne.NewSize(40, 40)))
+		b7.Add(widget.NewLabelWithData(remarkInfo))
+	}
+
+	panelContainer.Add(overviewContainer)
 	serverListPanel.Add(panelContainer)
 	serverListPanel.Refresh()
 }
