@@ -406,7 +406,7 @@ func bind(server *Server) {
 
 	var scroll *container.Scroll
 	scroll = container.NewVScroll(list)
-	detailListContainer := container.NewGridWrap(fyne.NewSize(250, 190))
+	detailListContainer := container.NewGridWrap(fyne.NewSize(320, 190))
 	detailListContainer.Add(scroll)
 
 	detailContainer.Add(container.NewGridWrap(fyne.NewSize(40, 40)))
