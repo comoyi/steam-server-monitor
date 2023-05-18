@@ -4,6 +4,8 @@
 ```
 go get fyne.io/fyne/v2
 go get fyne.io/fyne/v2/cmd/fyne
+
+#go install fyne.io/fyne/v2/cmd/fyne@v2.2.3
 ```
 
 ## Usage
