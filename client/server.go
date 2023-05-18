@@ -15,6 +15,10 @@ import (
 
 var serverContainer = NewServerContainer()
 
+func GetServerContainer() *ServerContainer {
+	return serverContainer
+}
+
 type ServerContainer struct {
 	Servers []*Server
 	mu      sync.Mutex

@@ -14,8 +14,10 @@ import (
 var Conf Config
 
 type Config struct {
-	LogLevel string    `toml:"log_level" mapstructure:"log_level"`
-	Servers  []*Server `toml:"servers" mapstructure:"servers"`
+	LogLevel  string    `toml:"log_level" mapstructure:"log_level"`
+	EnableApi bool      `toml:"enable_api" mapstructure:"enable_api"`
+	ApiPort   int64     `toml:"api_port" mapstructure:"api_port"`
+	Servers   []*Server `toml:"servers" mapstructure:"servers"`
 }
 
 type Server struct {
