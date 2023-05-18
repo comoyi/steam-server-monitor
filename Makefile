@@ -53,5 +53,5 @@ bundle-font-build:
 
 .PHONY: deps
 deps:
-	go get fyne.io/fyne/v2
-	go install fyne.io/fyne/v2/cmd/fyne@latest
+	#go get fyne.io/fyne/v2
+	go install fyne.io/fyne/v2/cmd/fyne@2.2.3
