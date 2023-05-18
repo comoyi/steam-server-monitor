@@ -73,7 +73,7 @@ func initMenu() {
 
 		h := container.NewHBox()
 
-		authorInfo := widget.NewLabel("Copyright © 2022 清新池塘")
+		authorInfo := widget.NewLabel("Copyright © 2022-2023 清新池塘")
 		h.Add(authorInfo)
 		linkInfo := widget.NewHyperlink(" ", nil)
 		_ = linkInfo.SetURLFromString("https://github.com/comoyi/steam-server-monitor")
