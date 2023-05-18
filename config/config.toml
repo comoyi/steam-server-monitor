@@ -1,6 +1,10 @@
 # 日志等级 TRACE DEBUG INFO WARN ERROR OFF
 log_level = 'OFF'
 
+enable_api = false
+
+api_port = 9091
+
 [[servers]]
   display_name = ''
   ip = '127.0.0.1'

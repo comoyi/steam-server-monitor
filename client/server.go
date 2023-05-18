@@ -15,6 +15,10 @@ import (
 
 var serverContainer = NewServerContainer()
 
+func GetServerContainer() *ServerContainer {
+	return serverContainer
+}
+
 type ServerContainer struct {
 	Servers []*Server
 	mu      sync.Mutex
@@ -113,7 +117,8 @@ type ViewData struct {
 }
 
 type Player struct {
-	Duration int64 `json:"duration"`
+	Name     string `json:"name"`
+	Duration int64  `json:"duration"`
 }
 
 type Info struct {
@@ -183,7 +188,8 @@ func refreshUI(server *Server) {
 			if p == nil {
 				continue
 			}
-			playerInfoList = append(playerInfoList, fmt.Sprintf("玩家%d连续在线%s", i+1, timeutil.FormatDuration(p.Duration)))
+			nameStr := " " + p.Name
+			playerInfoList = append(playerInfoList, fmt.Sprintf("玩家%2d 连续在线 %s%s", i+1, timeutil.FormatDuration(p.Duration), nameStr))
 		}
 
 		server.ViewData.PlayerInfos.Set(playerInfoList)
@@ -241,6 +247,7 @@ func getInfo(server *Server) (*Info, error) {
 			continue
 		}
 		player := &Player{
+			Name:     p.Name,
 			Duration: int64(p.Duration),
 		}
 		players = append(players, player)

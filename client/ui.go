@@ -73,7 +73,7 @@ func initMenu() {
 
 		h := container.NewHBox()
 
-		authorInfo := widget.NewLabel("Copyright © 2022 清新池塘")
+		authorInfo := widget.NewLabel("Copyright © 2022-2023 清新池塘")
 		h.Add(authorInfo)
 		linkInfo := widget.NewHyperlink(" ", nil)
 		_ = linkInfo.SetURLFromString("https://github.com/comoyi/steam-server-monitor")
@@ -406,7 +406,7 @@ func bind(server *Server) {
 
 	var scroll *container.Scroll
 	scroll = container.NewVScroll(list)
-	detailListContainer := container.NewGridWrap(fyne.NewSize(250, 190))
+	detailListContainer := container.NewGridWrap(fyne.NewSize(320, 190))
 	detailListContainer.Add(scroll)
 
 	detailContainer.Add(container.NewGridWrap(fyne.NewSize(40, 40)))

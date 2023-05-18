@@ -1,6 +1,6 @@
 # steam-server-monitor
 
-## Prerequisites
+## Dependence
 ```
 go get fyne.io/fyne/v2
 go get fyne.io/fyne/v2/cmd/fyne
