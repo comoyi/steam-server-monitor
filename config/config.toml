@@ -1,0 +1,2 @@
+# LogLevel TRACE DEBUG INFO WARN ERROR OFF
+log_level = 'OFF'

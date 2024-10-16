@@ -10,3 +10,4 @@ build-run:
 .PHONY: build
 build:
 	go build -o target/linux/steam-server-monitor main.go
+	cp config/config.toml target/linux/
