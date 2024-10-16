@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"github.com/comoyi/steam-server-monitor/client"
 	"github.com/comoyi/steam-server-monitor/config"
+	"github.com/comoyi/steam-server-monitor/data"
 	"github.com/comoyi/steam-server-monitor/gui"
 )
 
@@ -33,6 +35,21 @@ func (a *App) Run() {
 		fmt.Printf("config is nil\n")
 		return
 	}
+
+	data := data.New()
+	err := data.Init()
+	if err != nil {
+		fmt.Printf("init data failed, err: %v\n", err)
+		return
+	}
+
+	go func() {
+		client := client.New()
+		client.Data = data
+		client.Run()
+	}()
+
 	g := gui.New()
+	g.Data = data
 	g.Run()
 }

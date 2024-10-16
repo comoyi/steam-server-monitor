@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/comoyi/steam-server-monitor/data"
 )
 
 func NewMainWindow() *MainWindow {
@@ -15,6 +16,7 @@ func NewMainWindow() *MainWindow {
 }
 
 type MainWindow struct {
+	Data    *data.Data
 	App     fyne.App
 	Window  fyne.Window
 	ToolBar *fyne.Container
@@ -35,12 +37,18 @@ func (w *MainWindow) Init() error {
 	}
 	c2.Add(toolBar)
 
-	title := binding.NewString()
-	err = title.Set("Title")
-	if err != nil {
-		fmt.Printf("set title failed, err: %v\n", err)
-		return err
-	}
+	counter := binding.BindInt(&w.Data.Counter)
+	title := binding.NewSprintf("Counter: %d", counter)
+
+	go func() {
+		for {
+			<-w.Data.ChCounter
+			err := counter.Reload()
+			if err != nil {
+				fmt.Printf("counter reload error: %v\n", err)
+			}
+		}
+	}()
 
 	l := widget.NewLabelWithData(title)
 	c2.Add(l)

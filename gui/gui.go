@@ -3,6 +3,7 @@ package gui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"github.com/comoyi/steam-server-monitor/data"
 )
 
 func New() *Gui {
@@ -11,6 +12,7 @@ func New() *Gui {
 }
 
 type Gui struct {
+	Data       *data.Data
 	App        fyne.App
 	MainWindow *MainWindow
 }
@@ -39,6 +41,7 @@ func (g *Gui) initApp() error {
 func (g *Gui) initMainWindow() error {
 	mainWindow := NewMainWindow()
 	mainWindow.App = g.App
+	mainWindow.Data = g.Data
 	g.MainWindow = mainWindow
 	err := mainWindow.Init()
 	if err != nil {
