@@ -4,6 +4,7 @@ go 1.23.2
 
 require (
 	fyne.io/fyne/v2 v2.5.2
+	github.com/rumblefrog/go-a2s v1.0.2
 	github.com/spf13/viper v1.19.0
 )
 
