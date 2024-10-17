@@ -1,6 +1,7 @@
 package data
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
 	"os"
@@ -35,7 +36,13 @@ func (d *Data) Init() error {
 		fmt.Printf("load server config failed, err: %v\n", err)
 		return err
 	}
-	fmt.Printf("load server config success, conf: %+v\n", conf)
+
+	serverConfigBs, err := json.Marshal(conf)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("load server config success, conf: %+v\n", string(serverConfigBs))
+
 	for _, v := range conf.Servers {
 		server := &Server{
 			DisplayName: v.DisplayName,

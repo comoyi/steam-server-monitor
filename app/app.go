@@ -6,6 +6,7 @@ import (
 	"github.com/comoyi/steam-server-monitor/config"
 	"github.com/comoyi/steam-server-monitor/data"
 	"github.com/comoyi/steam-server-monitor/gui"
+	"github.com/comoyi/steam-server-monitor/log"
 )
 
 func Run() {
@@ -15,6 +16,20 @@ func Run() {
 		return
 	}
 	fmt.Printf("load config success, conf: %+v\n", conf)
+
+	err = log.Init()
+	if err != nil {
+		fmt.Printf("init logger failed, err: %v\n", err)
+		return
+	}
+	_, err = log.SetLogLevelByName(conf.LogLevel)
+	if err != nil {
+		fmt.Printf("set log level failed, err: %v\n", err)
+		return
+	}
+
+	log.Debugf("log level: %s", log.LogLevel())
+
 	a := New(conf)
 	a.Run()
 }
