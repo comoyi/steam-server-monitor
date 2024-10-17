@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/comoyi/steam-server-monitor/data"
+	"github.com/comoyi/steam-server-monitor/log"
 )
 
 func NewMainWindow() *MainWindow {
@@ -45,7 +46,7 @@ func (w *MainWindow) Init() error {
 			<-w.Data.ChCounter
 			err := counter.Reload()
 			if err != nil {
-				fmt.Printf("counter reload error: %v\n", err)
+				log.Errorf("counter reload error: %v", err)
 			}
 		}
 	}()

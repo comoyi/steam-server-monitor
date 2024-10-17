@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -122,11 +123,13 @@ func (l *Logger) logf(level Level, format string, args ...any) {
 		return
 	}
 
-	writeToConsole(level, format, args...)
-	writeToFile(level, format, args...)
+	_, filepath, line, _ := runtime.Caller(2)
+
+	writeToConsole(level, filepath, line, format, args...)
+	writeToFile(level, filepath, line, format, args...)
 }
 
-func writeToConsole(level Level, format string, args ...any) {
+func writeToConsole(level Level, filepath string, line int, format string, args ...any) {
 	color := ""
 	postfix := ""
 	switch level {
@@ -143,13 +146,15 @@ func writeToConsole(level Level, format string, args ...any) {
 	case LevelError:
 		color = colorRed
 	}
+	fileLine := fmt.Sprintf("%s:%d", filepath, line)
 	levelText := fmt.Sprintf("%s%s%s%s%s%s", color, "[", level.String(), "]", colorReset, postfix)
-	s := fmt.Sprintf(fmt.Sprintf("%s%s", time.Now().Format(time.DateTime), levelText)+format, args...)
+	s := fmt.Sprintf(fmt.Sprintf("%s\n%s%s", fileLine, time.Now().Format(time.DateTime), levelText)+format, args...)
 	io.WriteString(os.Stdout, s+"\n")
 }
 
-func writeToFile(level Level, format string, args ...any) {
-	s := fmt.Sprintf(fmt.Sprintf("%s%-7s", time.Now().Format(time.DateTime), "["+level.String()+"]")+format, args...)
+func writeToFile(level Level, filepath string, line int, format string, args ...any) {
+	fileLine := fmt.Sprintf("%s:%d", filepath, line)
+	s := fmt.Sprintf(fmt.Sprintf("%s\n%s%-7s", fileLine, time.Now().Format(time.DateTime), "["+level.String()+"]")+format, args...)
 	file, err := os.OpenFile("log.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, fs.ModePerm)
 	if err != nil {
 		return

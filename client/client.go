@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/comoyi/steam-server-monitor/data"
+	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/rumblefrog/go-a2s"
 	"time"
 )
@@ -34,10 +35,15 @@ func (c *Client) Run() {
 					case <-time.After(time.Second * time.Duration(v.Interval)):
 						info, err := QueryInfo(v)
 						if err != nil {
-							fmt.Printf("Query info error: %v\n", err)
+							log.Infof("Query info error: %v", err)
 							return
 						}
-						fmt.Printf("info: %+v\n", info)
+						infoJsonBytes, err := json.Marshal(info)
+						if err != nil {
+							return
+						}
+						infoJson := string(infoJsonBytes)
+						log.Debugf("info: %v", string(infoJson))
 					}
 				}
 			}(v)
@@ -75,7 +81,7 @@ func QueryInfo(server *data.Server) (*Info, error) {
 		return nil, err
 	}
 	serverInfoJson := string(serverInfoJsonBytes)
-	fmt.Printf("serverInfoJson: %v\n", serverInfoJson)
+	log.Debugf("serverInfoJson: %v", serverInfoJson)
 	serverName := serverInfo.Name
 
 	playerInfo, err := client.QueryPlayer()
@@ -89,7 +95,7 @@ func QueryInfo(server *data.Server) (*Info, error) {
 		return nil, err
 	}
 	playerInfoJson := string(playerInfoJsonBytes)
-	fmt.Printf("playerInfoJson: %v\n", playerInfoJson)
+	log.Debugf("playerInfoJson: %v", playerInfoJson)
 
 	var players = make([]*Player, 0)
 	for _, p := range playerInfo.Players {

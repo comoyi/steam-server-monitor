@@ -47,14 +47,14 @@ type App struct {
 
 func (a *App) Run() {
 	if a.conf == nil {
-		fmt.Printf("config is nil\n")
+		log.Errorf("config is nil")
 		return
 	}
 
 	data := data.New()
 	err := data.Init()
 	if err != nil {
-		fmt.Printf("init data failed, err: %v\n", err)
+		log.Errorf("init data failed, err: %v", err)
 		return
 	}
 

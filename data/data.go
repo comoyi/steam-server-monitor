@@ -2,7 +2,7 @@ package data
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/comoyi/steam-server-monitor/log"
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
@@ -33,15 +33,16 @@ func (d *Data) Init() error {
 
 	conf, err := LoadConfig()
 	if err != nil {
-		fmt.Printf("load server config failed, err: %v\n", err)
+		log.Errorf("load server config failed, err: %v", err)
 		return err
 	}
 
-	serverConfigBs, err := json.Marshal(conf)
+	serverConfigJsonBytes, err := json.Marshal(conf)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("load server config success, conf: %+v\n", string(serverConfigBs))
+	serverConfigJson := string(serverConfigJsonBytes)
+	log.Debugf("load server config success, conf: %v", serverConfigJson)
 
 	for _, v := range conf.Servers {
 		server := &Server{
@@ -94,7 +95,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	usedConfig := v.ConfigFileUsed()
-	fmt.Printf("used server config: %s\n", usedConfig)
+	log.Debugf("used server config: %s", usedConfig)
 
 	err = v.Unmarshal(&conf)
 	if err != nil {
