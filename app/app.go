@@ -22,13 +22,13 @@ func Run() {
 		fmt.Printf("init logger failed, err: %v\n", err)
 		return
 	}
-	_, err = log.SetLogLevelByName(conf.LogLevel)
+	_, err = log.SetLevelByName(conf.LogLevel)
 	if err != nil {
 		fmt.Printf("set log level failed, err: %v\n", err)
 		return
 	}
 
-	log.Debugf("log level: %s", log.LogLevel())
+	log.Debugf("log level: %s", log.GetLevel())
 
 	a := New(conf)
 	a.Run()

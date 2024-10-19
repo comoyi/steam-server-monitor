@@ -11,9 +11,7 @@ import (
 	"time"
 )
 
-var logger *Logger
-
-var currentLogLevel Level = LevelOff
+var logger Logger
 
 type Level int
 
@@ -30,6 +28,7 @@ const (
 	LevelInfo  Level = 300
 	LevelWarn  Level = 400
 	LevelError Level = 500
+	LevelFatal Level = 600
 	LevelOff   Level = 900
 )
 
@@ -39,6 +38,7 @@ const (
 	NameInfo  string = "INFO"
 	NameWarn  string = "WARN"
 	NameError string = "ERROR"
+	NameFatal string = "FATAL"
 	NameOff   string = "OFF"
 )
 
@@ -48,6 +48,7 @@ var levelNameMap = map[Level]string{
 	LevelInfo:  NameInfo,
 	LevelWarn:  NameWarn,
 	LevelError: NameError,
+	LevelFatal: NameFatal,
 	LevelOff:   NameOff,
 }
 
@@ -57,28 +58,27 @@ var nameLevelMap = map[string]Level{
 	NameInfo:  LevelInfo,
 	NameWarn:  LevelWarn,
 	NameError: LevelError,
+	NameFatal: LevelFatal,
 	NameOff:   LevelOff,
 }
 
-func LogLevel() Level {
-	return currentLogLevel
+func GetLevel() Level {
+	return logger.GetLevel()
 }
 
-func SetLogLevel(level Level) Level {
-	oldLogLevel := currentLogLevel
-	currentLogLevel = level
-	return oldLogLevel
+func SetLevel(level Level) Level {
+	return logger.SetLevel(level)
 }
 
-func SetLogLevelByName(levelName string) (Level, error) {
-	level, err := GetLogLevelByName(levelName)
+func SetLevelByName(levelName string) (Level, error) {
+	level, err := GetLevelByName(levelName)
 	if err != nil {
 		return 0, err
 	}
-	return SetLogLevel(level), nil
+	return SetLevel(level), nil
 }
 
-func GetLogLevelByName(levelName string) (Level, error) {
+func GetLevelByName(levelName string) (Level, error) {
 	name := strings.ToUpper(levelName)
 	if level, ok := nameLevelMap[name]; ok {
 		return level, nil
@@ -87,23 +87,27 @@ func GetLogLevelByName(levelName string) (Level, error) {
 }
 
 func Tracef(format string, args ...any) {
-	logger.logf(LevelTrace, format, args...)
+	logger.Tracef(format, args...)
 }
 
 func Debugf(format string, args ...any) {
-	logger.logf(LevelDebug, format, args...)
+	logger.Debugf(format, args...)
 }
 
 func Infof(format string, args ...any) {
-	logger.logf(LevelInfo, format, args...)
+	logger.Infof(format, args...)
 }
 
 func Warnf(format string, args ...any) {
-	logger.logf(LevelWarn, format, args...)
+	logger.Warnf(format, args...)
 }
 
 func Errorf(format string, args ...any) {
-	logger.logf(LevelError, format, args...)
+	logger.Errorf(format, args...)
+}
+
+func Fatalf(format string, args ...any) {
+	logger.Fatalf(format, args...)
 }
 
 func Init() error {
@@ -111,15 +115,65 @@ func Init() error {
 	return nil
 }
 
-func New() *Logger {
-	logger := &Logger{}
+func New() Logger {
+	logger := &MyLogger{
+		level: LevelInfo,
+	}
 	return logger
 }
 
-type Logger struct{}
+type Logger interface {
+	Tracef(format string, args ...any)
+	Debugf(format string, args ...any)
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
+	GetLevel() Level
+	SetLevel(level Level) Level
+	logf(level Level, format string, args ...any)
+}
 
-func (l *Logger) logf(level Level, format string, args ...any) {
-	if level < currentLogLevel {
+type MyLogger struct {
+	level Level
+}
+
+func (l *MyLogger) Tracef(format string, args ...any) {
+	l.logf(LevelTrace, format, args...)
+}
+
+func (l *MyLogger) Debugf(format string, args ...any) {
+	l.logf(LevelDebug, format, args...)
+}
+
+func (l *MyLogger) Infof(format string, args ...any) {
+	l.logf(LevelInfo, format, args...)
+}
+
+func (l *MyLogger) Warnf(format string, args ...any) {
+	l.logf(LevelWarn, format, args...)
+}
+
+func (l *MyLogger) Errorf(format string, args ...any) {
+	l.logf(LevelError, format, args...)
+}
+
+func (l *MyLogger) Fatalf(format string, args ...any) {
+	l.logf(LevelFatal, format, args...)
+}
+
+func (l *MyLogger) GetLevel() Level {
+	return l.level
+}
+
+func (l *MyLogger) SetLevel(level Level) Level {
+	oldLevel := l.level
+	l.level = level
+	return oldLevel
+}
+
+func (l *MyLogger) logf(level Level, format string, args ...any) {
+	if level < l.level {
 		return
 	}
 
